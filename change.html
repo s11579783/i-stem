@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>嫦娥六号3D模型</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        
+        canvas {
+            display: block;
+        }
+        
+        #info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-family: Arial, sans-serif;
+            pointer-events: none;
+        }
+        
+        .flight-indicator {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .flight-indicator .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background-color: white;
+            border-radius: 50%;
+            animation: star-motion linear infinite;
+        }
+        
+        @keyframes star-motion {
+            from { transform: translateY(-100vh); }
+            to { transform: translateY(100vh); }
+        }
+    </style>
+</head>
+<body>
+    <div class="flight-indicator" id="stars"></div>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script>
+        // 初始化Three.js场景
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        
+        // 设置相机
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 0.5); // 调整相机位置使模型居中
+        
+        // 设置渲染器
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+        
+        // 添加光源
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(1, 1, 1);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+        
+        // 创建嫦娥六号模型
+        const changE6Group = new THREE.Group();
+        
+        // 1. 轨道器 (顶部小型白色长方体)
+        const orbiterGeometry = new THREE.BoxGeometry(0.075, 0.03, 0.075);
+        const orbiterMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0xffffff,
+            emissive: 0x222222,
+            specular: 0x999999,
+            shininess: 30
+        });
+        const orbiter = new THREE.Mesh(orbiterGeometry, orbiterMaterial);
+        orbiter.position.y = 0.095;
+        changE6Group.add(orbiter);
+        
+        // 2. 返回器 (大型白色长方体)
+        const returnerGeometry = new THREE.BoxGeometry(0.1, 0.05, 0.1);
+        const returnerMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0xffffff,
+            emissive: 0x222222,
+            specular: 0x999999,
+            shininess: 30
+        });
+        const returner = new THREE.Mesh(returnerGeometry, returnerMaterial);
+        returner.position.y = 0.05;
+        changE6Group.add(returner);
+        
+        // 返回器的太阳能板 (两侧蓝色面板)
+        const solarPanelGeometry = new THREE.BoxGeometry(0.12, 0.1, 0.01);
+        const solarPanelMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0x0e197f,
+            emissive: 0x003366,
+            specular: 0x6666ff,
+            shininess: 50
+        });
+        
+        const leftSolarPanel = new THREE.Mesh(solarPanelGeometry, solarPanelMaterial);
+        leftSolarPanel.position.set(-0.11, 0.0625, 0);
+        leftSolarPanel.rotation.x = Math.PI/2;
+        changE6Group.add(leftSolarPanel);
+        
+        const rightSolarPanel = new THREE.Mesh(solarPanelGeometry, solarPanelMaterial);
+        rightSolarPanel.position.set(0.11, 0.0625, 0);
+        rightSolarPanel.rotation.x = Math.PI/2;
+        changE6Group.add(rightSolarPanel);
+        
+        // 3. 着陆器 (金色圆柱)
+        const landerGeometry = new THREE.CylinderGeometry(0.05, 0.058, 0.05, 16);
+        const landerMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0xb18f3b,
+            emissive: 0x996600,
+            specular: 0xffdd55,
+            shininess: 40
+        });
+        const lander = new THREE.Mesh(landerGeometry, landerMaterial);
+        lander.position.y = -0.005;
+        changE6Group.add(lander);
+        
+        // 4. 上升器 (白色圆台)
+        const ascenderGeometry = new THREE.CylinderGeometry(0.058, 0.058, 0.05, 16);
+        const ascenderMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0x0e197f,
+            emissive: 0x222222,
+            specular: 0x999999,
+            shininess: 30
+        });
+        const ascender = new THREE.Mesh(ascenderGeometry, ascenderMaterial);
+        ascender.position.y = -0.06;
+        changE6Group.add(ascender);
+        
+        // 将整个模型组居中
+        changE6Group.position.set(0, 0, 0);
+        scene.add(changE6Group);
+        
+        // 创建流星背景
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            
+            // 创建50颗星星
+            for (let i = 0; i < 50; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                
+                // 随机位置、大小和动画持续时间
+                const left = Math.random() * 100;
+                const size = Math.random() * 2 + 1;
+                const duration = Math.random() * 3 + 2;
+                const delay = Math.random() * 5;
+                
+                star.style.left = `${left}%`;
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                star.style.animationDuration = `${duration}s`;
+                star.style.animationDelay = `${delay}s`;
+                star.style.opacity = Math.random() * 0.5 + 0.5;
+                
+                starsContainer.appendChild(star);
+            }
+        }
+        
+        // 窗口大小调整
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // 动画循环
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            
+            renderer.render(scene, camera);
+        }
+        
+        // 初始化
+        window.addEventListener('resize', onWindowResize);
+        createStars();
+        animate();
+    </script>
+</body>
+</html>
