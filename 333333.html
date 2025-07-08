@@ -1,0 +1,1946 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>嫦娥六號發射模擬器 | Chang'e-6 Launch Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans TC', 'Roboto', sans-serif;
+        }
+        
+        body {
+            overflow: hidden;
+            background: linear-gradient(to bottom, #000000 0%, #000033 100%);
+            color: white;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            background: #000;
+            perspective: 1000px; /* Add perspective for 3D effect */
+        }
+        
+        #game-container {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            perspective: 1000px;
+            overflow: hidden;
+        }
+        
+        #rocket-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            transition: transform 2.5s ease-out; /* 缩短过渡时间 */
+        }
+        
+        .rocket {
+            position: relative;
+            width: 200px;
+            height: 600px;
+            transform-style: preserve-3d;
+            transform: rotateX(-10deg);
+            bottom: -300px;
+            transition: bottom 5s ease-out, transform 2s; /* 缩短过渡时间 */
+        }
+        
+        .fairing {
+            position: absolute;
+            width: 100px;
+            height: 120px;
+            background: linear-gradient(to bottom, #ffffff 0%, #f8f4ed 100%);
+            left: 60px;
+            top: 0;
+            border-radius: 40px 40px 0 0;
+            transform-origin: bottom center;
+            transition: all 1s;
+        }
+        
+        .fairing.left {
+            clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+        }
+        
+        .fairing.right {
+            clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%);
+        }
+        
+        .fairing.detached-left {
+            transform: translateX(-100px) rotateZ(-30deg);
+            opacity: 0;
+        }
+        
+        .fairing.detached-right {
+            transform: translateX(100px) rotateZ(30deg);
+            opacity: 0;
+        }
+        
+        .payload {
+            position: absolute;
+            background: linear-gradient(to bottom, #ffffff 0%, #e1dacf 100%);
+            left: 65px;
+            top: 20px;
+            opacity: 0;
+            transition: opacity 1s, transform 2s;
+        }
+        /* 上部较小的正方体 */
+.payload::before {
+    content: "";
+    position: absolute;
+    width: 40px;
+    height: 30px;
+    background: #ede8dd;
+    top: 35px;
+    left: 25px;
+}
+
+/* 下部较大的正方体 */
+.payload::after {
+    content: "";
+    position: absolute;
+    width: 60px;
+    height: 35px;
+    background: #ede8dd;
+    bottom: -100px;
+    left: 15px;
+}
+        .payload.visible {
+            opacity: 1;
+        }
+        
+        .payload.separated {
+            transform: translateY(-200px);
+        }
+        
+        .second-stage {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(to bottom, #f8f4ed 0%, #ece7df 100%);
+            left: 60px;
+            top: 120px;
+        }
+.second-stage::before {
+    content: "";
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    background-image: url('https://i.postimg.cc/nMQNH4jv/China-Aerospace-Science-and-Technology-Corporation.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    top: 20px; /* 调整这个值可以改变图片在二级火箭上的垂直位置 */
+    left: 10px;
+    z-index: 1;
+}
+
+        
+        .first-stage {
+    position: absolute;
+    width: 100px;
+    height: 300px;
+     background: linear-gradient(to bottom, #ece7df 50%, #d9d2c5 100%);
+    left: 60px;
+    top: 220px;
+    transition: all 1s;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* 改为从顶部开始排列 */
+    justify-content: center;
+    align-items: center;
+    padding-top: 30px; /* 顶部内边距，让内容更靠上 */
+        }
+        
+.first-stage::after {
+    content: "中国航天";
+    writing-mode: vertical-rl;
+    letter-spacing: 5px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #004ea1;
+    text-shadow: 0 0 2px rgba(3,3,131,0.8);
+    margin-top: 10px;
+    margin-bottom: 150px;
+    left: 10px;
+    transform: translateY(10px);
+}
+.first-stage::before {
+    content: "";
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background-image: url('https://i.postimg.cc/cgD32tZC/Long-March-5-Logo.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-bottom: -50px;
+    left: 25px;
+    z-index: 1;
+}
+.first-stage .flame {
+    bottom: -10px; /* 保持火焰在底部 */
+}
+        .first-stage.detached {
+            transform: translateY(100px);
+            opacity: 0;
+        }
+        
+        .booster {
+            position: absolute;
+            width: 80px;
+            height: 250px;
+            background: linear-gradient(to bottom, #f8f4ed 0%, #d9d2c5 100%);
+            top: 300px;
+            border-radius: 50px 50px 0 0;
+            transition: all 1s;
+            overflow: visible;
+        }
+        
+        .booster.left-front {
+            left: -22px;
+        }
+        
+        .booster.right-front {
+            left: 162px;
+        }
+        
+        .booster.left-back {
+            left: -22px;
+            transform: translateZ(-10px);
+        }
+        
+        .booster.right-back {
+            left: 162px;
+            transform: translateZ(-10px);
+        }
+        
+        .booster.detached-left-front {
+            transform: translateX(-100px) rotateZ(-20deg);
+            opacity: 0;
+        }
+        
+        .booster.detached-right-front {
+            transform: translateX(100px) rotateZ(20deg);
+            opacity: 0;
+        }
+        
+        .booster.detached-left-back {
+            transform: translateZ(-10px) translateX(-100px) rotateZ(-20deg);
+            opacity: 0;
+        }
+        
+        .booster.detached-right-back {
+            transform: translateZ(-10px) translateX(100px) rotateZ(20deg);
+            opacity: 0;
+        }
+        
+        .engine {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #333333;
+            border-radius: 50%;
+            bottom: -10px;
+            transform: translateX(-10px);
+        }
+        
+        .first-stage .engine {
+            left: 20px;
+        }
+        
+        .first-stage .engine:nth-child(2) {
+            left: 40px;
+        }
+        
+        .first-stage .engine:nth-child(3) {
+            left: 60px;
+        }
+        
+        .first-stage .engine:nth-child(4) {
+            left: 80px;
+        }
+        
+        .second-stage .engine {
+            left: 20px;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        
+        .second-stage .engine:nth-child(2) {
+            left: 40px;
+        }
+        
+        .second-stage .engine:nth-child(3) {
+            left: 60px;
+        }
+        
+        .second-stage .engine:nth-child(4) {
+            left: 80px;
+        }
+        
+        .engine.ignited {
+            box-shadow: 0 0 20px 10px rgba(255, 165, 0, 0.8);
+        }
+        
+        .flame {
+            position: absolute;
+            width: 60px;
+            height: 0;
+            background: linear-gradient(to bottom, rgba(255, 165, 0, 0.8) 0%, rgba(255, 69, 0, 0.6) 60%, rgba(255, 255, 0, 0.4) 100%);
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%) translateY(120px) rotateX(180deg);
+            border-radius: 50% 50% 20% 20%;
+            transition: height 1s;
+        }
+        
+        .flame.active {
+            height: 150px;
+            animation: flicker 0.1s infinite alternate;
+        }
+        
+        @keyframes flicker {
+            0% { height: 120px; opacity: 0.9; }
+            100% { height: 150px; opacity: 1; }
+        }
+        
+        
+        .prompt-container {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 100;
+            min-width: 300px;
+            border: 2px solid #1a73e8;
+            box-shadow: 0 4px 6px rgba(0, 100, 255, 0.8);
+        }
+        
+        .prompt-text {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: white;
+            font-weight: 500;
+        }
+        
+        .ignition-button {
+            padding: 10px 20px;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            min-width: 100px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 100, 255, 0.8);
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-family: 'Noto Sans TC', 'Roboto', sans-serif;
+        }
+        
+        .ignition-button:hover {
+            background-color: #1557b0;
+            transform: scale(1.05);
+            box-shadow: 0 6px 8px rgba(0, 135, 255, 0.6);
+        }
+        
+        .progress-container {
+            position: absolute;
+            bottom: 30px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 100;
+            width: auto;
+            max-width: 300px;
+            border: 2px solid #1a73e8;
+            box-shadow: 0 4px 6px rgba(0, 100, 255, 0.8);
+        }
+        
+        .progress-step {
+            margin: 5px 0;
+            color: #999;
+            font-size: 14px;
+            text-align: left;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            font-family: 'Noto Sans TC', 'Roboto', sans-serif;
+        }
+        
+        .progress-step.active {
+            color: #1a73e8;
+            font-weight: bold;
+            background-color: rgba(26, 115, 232, 0.1);
+            border-left: 3px solid #1a73e8;
+        }
+        
+        .progress-step.completed {
+            color: #00cc00;
+            background-color: rgba(0, 204, 0, 0.1);
+            border-left: 3px solid #00cc00;
+        }
+        
+        .altitude-container {
+            position: absolute;
+            bottom: 30px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 10px;
+            z-index: 100;
+            text-align: center;
+            border: 2px solid #1a73e8;
+            box-shadow: 0 4px 6px rgba(0, 100, 255, 0.8);
+            font-family: 'Noto Sans TC', 'Roboto', sans-serif;
+        }
+        
+        #altitude-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1a73e8;
+            margin-top: 5px;
+        }
+        
+        .countdown {
+            position: absolute;
+            top: 250px;
+            left: 688px;
+            transform: translateX(140px);
+            font-size: 120px;
+            color: #ff3300;
+            z-index: 200;
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(255, 51, 0, 0.8);
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        
+        .countdown.visible {
+            opacity: 1;
+        }
+        
+        .scene-transition {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            z-index: 150;
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+        }
+        
+        .scene-transition.active {
+            opacity: 1;
+        }
+        
+        .earth-backdrop {
+            position: absolute;
+            bottom: -500px;
+            left: 0;
+            width: 150%;
+            height: 500px;
+            background: radial-gradient(ellipse at center, #1a3a8a 0%, #000033 100%);
+            border-radius: 50% 50% 0 0;
+            transform: translateX(-25%);
+            transition: bottom 2.5s ease-out; /* 缩短过渡时间 */
+        }
+        
+        .earth-backdrop.fade-away {
+            bottom: -800px;
+        }
+        
+        .mission-complete, .mission-failed {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 300;
+            max-width: 80%;
+            display: none;
+            border: 2px solid #1a73e8;
+            box-shadow: 0 4px 6px rgba(0, 100, 255, 0.8);
+        }
+        
+        .mission-complete h2, .mission-failed h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            font-family: 'Noto Sans TC', 'Roboto', sans-serif;
+        }
+        
+        .mission-complete p, .mission-failed p {
+            font-size: 18px;
+            margin-bottom: 20px;
+            font-family: 'Noto Sans TC', 'Roboto', sans-serif;
+        }
+        
+        .restart-button {
+            padding: 10px 20px;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            min-width: 100px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 100, 255, 0.8);
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-family: 'Noto Sans TC', 'Roboto', sans-serif;
+            margin: 0 auto;
+        }
+        
+        .restart-button:hover {
+            background-color: #1557b0;
+            transform: scale(1.05);
+            box-shadow: 0 6px 8px rgba(0, 135, 255, 0.6);
+        }
+        
+        .flight-indicator {
+            position: absolute;
+            width: 100%;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 2s;
+        }
+        
+        .flight-indicator.active {
+            opacity: 1;
+        }
+        
+        .flight-indicator .star {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background-color: white;
+            border-radius: 50%;
+            animation: star-motion 3s linear infinite;
+        }
+        
+        .spacecraft-focus {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 2s;
+        }
+        
+        .spacecraft-focus.visible {
+            opacity: 1;
+        }
+        
+        .spacecraft-model {
+            width: 100%;
+            height: 100%;
+            background: none;
+            position: relative;
+            transform: scale(1.5);
+            animation: float 5s infinite ease-in-out;
+        }
+        
+        .body-large {
+            position: absolute;
+            width: 120px;
+            height: 80px;
+            background: #b0b0b0;
+            left: -10px;
+            top: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            border: 2px solid #888;
+            z-index: 1;
+        }
+        
+        .body-small {
+            position: absolute;
+            width: 80px;
+            height: 60px;
+            background: #e0e0e0;
+            left: 10px;
+            top: -51px;
+            border-radius: 5px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            border: 2px solid #aaa;
+            z-index: 2;
+        }
+        
+        .solar-panel {
+            position: absolute;
+            height: 20px;
+            background: linear-gradient(to bottom, #3366cc 0%, #0033cc 100%);
+            top: 40px;
+        }
+        
+        .solar-panel.left {
+            width: 60px;
+            left: -70px;
+        }
+        
+        .solar-panel.right {
+            width: 60px;
+            right: -70px;
+        }
+        
+        /* 可交互区域样式 */
+        .clickable {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.1);
+            z-index: 10;
+            border-radius: 5px;
+            cursor: default; /* 默认不显示pointer */
+            transition: all 0.3s;
+            opacity: 0; /* 默认隐藏 */
+            pointer-events: none; /* 默认不可交互 */
+        }
+        
+        .clickable.active {
+            opacity: 1;
+            pointer-events: auto;
+            cursor: pointer;
+            background-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            animation: pulse-area 2s infinite;
+        }
+        
+        @keyframes pulse-area {
+            0% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.8); }
+            100% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
+        }
+        
+        .booster-click-area {
+            width: 100px;
+            height: 280px;
+        }
+        
+        .booster-click-area.left-front {
+            left: -32px;
+            top: 290px;
+        }
+        
+        .booster-click-area.right-front {
+            left: 152px;
+            top: 290px;
+        }
+        
+        .fairing-click-area {
+            width: 130px;
+            height: 140px;
+            left: 45px;
+            top: -10px;
+        }
+        
+        .first-stage-click-area {
+            width: 130px;
+            height: 320px;
+            left: 45px;
+            top: 210px;
+        }
+
+        .payload-click-area {
+            width: 100px;
+            height: 80px;
+            left: 60px;
+            top: 45px;
+        }
+        
+        @keyframes star-motion {
+            from { transform: translateY(-100vh); }
+            to { transform: translateY(100vh); }
+        }
+        
+        /* 新增的第一宇宙速度对话框样式 */
+        .cosmic-velocity-dialog {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 350;
+            width: 80%;
+            max-width: 600px;
+            border: 2px solid #1a73e8;
+            box-shadow: 0 0 20px rgba(0, 100, 255, 0.8);
+            display: none;
+        }
+        
+        .cosmic-velocity-dialog h2 {
+            color: #1a73e8;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .cosmic-velocity-dialog p {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .cosmic-velocity-dialog iframe {
+            width: 100%;
+            height: 300px;
+            border: none;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .cosmic-velocity-dialog button {
+            display: block;
+            margin: 0 auto;
+            padding: 8px 16px;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .cosmic-velocity-dialog button:hover {
+            background-color: #1557b0;
+        }
+        
+        .payload-blue-bar {
+            position: absolute;
+            width: 12px;
+            height: 25px;
+            background: #0800ad;
+            border-radius: 0;
+            top: 85px;
+            opacity: 0;
+            transition: opacity 0.5s;
+            z-index: 2;
+        }
+        .payload-blue-bar.left {
+            left: 2px; /* 紧贴大矩形左侧 */
+            top: 70px;
+        }
+        .payload-blue-bar.right {
+            right: -88px; /* 紧贴大矩形右侧 */
+            top: 70px;
+        }
+        .payload.visible .payload-blue-bar {
+            opacity: 1;
+        }
+        
+        /* 助推器图片装饰 */
+        .booster-image {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            left: 10px;
+            top: 80px;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        .booster-bottom-image {
+            position: absolute;
+            width: 133px;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: -25px;
+            z-index: 11;
+            pointer-events: none;
+        }
+/* 新增的二级火箭第二次关机对话框样式 */
+.second-shutdown-dialog {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.9);
+    padding: 20px;
+    border-radius: 10px;
+    z-index: 350;
+    width: 80%;
+    max-width: 600px;
+    border: 2px solid #1a73e8;
+    box-shadow: 0 0 20px rgba(0, 100, 255, 0.8);
+    display: none;
+}
+
+.second-shutdown-dialog h2 {
+    color: #1a73e8;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.second-shutdown-dialog p {
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.second-shutdown-dialog iframe {
+    width: 100%;
+    height: 300px;
+    border: none;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.second-shutdown-dialog button {
+    display: block;
+    margin: 0 auto;
+    padding: 8px 16px;
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.second-shutdown-dialog button:hover {
+    background-color: #1557b0;
+}
+
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div class="stars"></div>
+        <div class="earth-backdrop"></div>
+        <div class="scene-transition"></div>
+        
+        <div class="flight-indicator"></div>
+        
+        <div class="spacecraft-focus">
+            <div class="spacecraft-model">
+                <div class="solar-panel left"></div>
+                <div class="solar-panel right"></div>
+                <div class="body-large"></div>
+                <div class="body-small"></div>
+            </div>
+        </div>
+        
+        <!-- 新增的第一宇宙速度对话框 -->
+        <div class="cosmic-velocity-dialog">
+            <h2 data-zh-tw="已達第一宇宙速度" data-zh-cn="已达第一宇宙速度" data-en="First Cosmic Velocity Reached">已達第一宇宙速度</h2>
+            <p data-zh-tw="速度已達7.9 km/s！現在可以環繞地球飛行" 
+               data-zh-cn="速度已达7.9 km/s！现在可以环绕地球飞行"
+               data-en="Velocity reached 7.9 km/s! Now can orbit the Earth">
+                速度已達7.9 km/s！現在可以環繞地球飛行
+            </p>
+            <iframe src="rotate.html"></iframe>
+            <button class="continue-button" data-zh-tw="繼續任務" data-zh-cn="继续任务" data-en="Continue Mission">繼續任務</button>
+        </div>
+        
+<!-- 新增的二级火箭第二次关机对话框 -->
+<div class="second-shutdown-dialog">
+    <h2 data-zh-tw="進入地月轉移軌道" data-zh-cn="进入地月转移轨道" data-en="Entering Earth-Moon Transfer Orbit">進入地月轉移軌道</h2>
+    <p data-zh-tw="速度已達約10.9 km/s！進入地月轉移軌道" 
+       data-zh-cn="速度已达约10.9 km/s！进入地月转移轨道"
+       data-en="Velocity reached about 10.9 km/s! Entering Earth-Moon transfer orbit">
+        速度已達約10.9 km/s！進入地月轉移軌道
+    </p>
+    <iframe src="orbit.html"></iframe>
+    <button class="continue-button" data-zh-tw="繼續任務" data-zh-cn="继续任务" data-en="Continue Mission">繼續任務</button>
+</div>
+
+        <div class="progress-container">
+            <div class="progress-step step-1 active" data-zh-tw="點火升空" data-zh-cn="点火升空" data-en="Ignition and Liftoff">點火升空</div>
+            <div class="progress-step step-2" data-zh-tw="助推器分離" data-zh-cn="助推器分离" data-en="Booster Separation">助推器分離</div>
+            <div class="progress-step step-3" data-zh-tw="整流罩分離" data-zh-cn="整流罩分离" data-en="Fairing Separation">整流罩分離</div>
+            <div class="progress-step step-4" data-zh-tw="一級火箭分離" data-zh-cn="一级火箭分离" data-en="First Stage Separation">一級火箭分離</div>
+            <div class="progress-step step-5" data-zh-tw="二級火箭點火" data-zh-cn="二级火箭点火" data-en="Second Stage Ignition">二級火箭點火</div>
+            <div class="progress-step step-6" data-zh-tw="星箭分離" data-zh-cn="星箭分离" data-en="Spacecraft Separation">星箭分離</div>
+        </div>
+        
+        <div class="altitude-container">
+            <div id="altitude-label" data-zh-tw="時間" data-zh-cn="时间" data-en="Time">時間: </div>
+            <div id="altitude-value">0 s</div>
+        </div>
+        
+        <div class="prompt-container">
+            <div class="prompt-text" data-zh-tw="準備發射嫦娥六號任務" data-zh-cn="准备发射嫦娥六号任务" data-en="Prepare to launch Chang'e-6 mission">準備發射嫦娥六號任務</div>
+            <button class="ignition-button" data-zh-tw="點火" data-zh-cn="点火" data-en="Ignite">點火</button>
+        </div>
+        
+        <div class="countdown">5</div>
+        
+        <div id="rocket-container">
+            <div class="rocket">
+                <!-- 点击区域 -->
+                <div class="clickable fairing-click-area" id="fairing-click"></div>
+                <div class="clickable booster-click-area left-front" id="booster-click-left"></div>
+                <div class="clickable booster-click-area right-front" id="booster-click-right"></div>
+                <div class="clickable first-stage-click-area" id="first-stage-click"></div>
+                <div class="clickable payload-click-area" id="payload-click"></div>
+                
+                <!-- 火箭部件 -->
+                <div class="fairing left">
+                </div>
+                <div class="fairing right">
+                </div>
+                <div class="payload">
+                    <div class="payload-blue-bar left"></div>
+                    <div class="payload-blue-bar right"></div>
+                </div>
+                <div class="second-stage">
+                    <div class="engine"></div>
+                    <div class="engine"></div>
+                    <div class="engine"></div>
+                    <div class="engine"></div>
+                </div>
+                <div class="first-stage">
+                    <div class="engine"></div>
+                    <div class="engine"></div>
+                    <div class="engine"></div>
+                    <div class="engine"></div>
+                    <div class="flame"></div>
+                    <img class="booster-bottom-image" style="top: -20px; width: 170px; height: 80px;" src="https://i.postimg.cc/JnqGV5DF/1.png" alt="助推器底部装饰" />
+                </div>
+                <div class="booster left-front">
+                    <img class="booster-image" style="top: 60px;" src="https://i.postimg.cc/D0z5z2PC/China-Aerospace-Science-and-Technology-Corporation-2.png" alt="助推器装饰" />
+                    <img class="booster-image" style="top: 110px;" src="https://i.postimg.cc/J4QK6fz3/Long-March-5-Logo-1-1.png" alt="助推器中间Logo" />
+                    <img class="booster-image" style="bottom: 30px; top: auto;" src="https://i.postimg.cc/D0z5z2PC/China-Aerospace-Science-and-Technology-Corporation-2.png" alt="助推器装饰" />
+                    <img class="booster-bottom-image" src="https://i.postimg.cc/JnqGV5DF/1.png" alt="助推器底部装饰" />
+                    <div class="flame"></div>
+                </div>
+                <div class="booster right-front">
+                    <img class="booster-image" style="top: 60px;" src="https://i.postimg.cc/D0z5z2PC/China-Aerospace-Science-and-Technology-Corporation-2.png" alt="助推器装饰" />
+                    <img class="booster-image" style="top: 110px;" src="https://i.postimg.cc/J4QK6fz3/Long-March-5-Logo-1-1.png" alt="助推器中间Logo" />
+                    <img class="booster-image" style="bottom: 30px; top: auto;" src="https://i.postimg.cc/D0z5z2PC/China-Aerospace-Science-and-Technology-Corporation-2.png" alt="助推器装饰" />
+                    <img class="booster-bottom-image" src="https://i.postimg.cc/JnqGV5DF/1.png" alt="助推器底部装饰" />
+                    <div class="flame"></div>
+                </div>
+                <div class="booster left-back">
+                    <img class="booster-image" style="top: 60px;" src="https://i.postimg.cc/D0z5z2PC/China-Aerospace-Science-and-Technology-Corporation-2.png" alt="助推器装饰" />
+                    <img class="booster-image" style="top: 110px;" src="https://i.postimg.cc/J4QK6fz3/Long-March-5-Logo-1-1.png" alt="助推器中间Logo" />
+                    <img class="booster-image" style="bottom: 30px; top: auto;" src="https://i.postimg.cc/D0z5z2PC/China-Aerospace-Science-and-Technology-Corporation-2.png" alt="助推器装饰" />
+                    <img class="booster-bottom-image" src="https://i.postimg.cc/JnqGV5DF/1.png" alt="助推器底部装饰" />
+                    <div class="flame"></div>
+                </div>
+                <div class="booster right-back">
+                    <img class="booster-image" style="top: 60px;" src="https://i.postimg.cc/D0z5z2PC/China-Aerospace-Science-and-Technology-Corporation-2.png" alt="助推器装饰" />
+                    <img class="booster-image" style="top: 110px;" src="https://i.postimg.cc/J4QK6fz3/Long-March-5-Logo-1-1.png" alt="助推器中间Logo" />
+                    <img class="booster-image" style="bottom: 30px; top: auto;" src="https://i.postimg.cc/D0z5z2PC/China-Aerospace-Science-and-Technology-Corporation-2.png" alt="助推器装饰" />
+                    <img class="booster-bottom-image" src="https://i.postimg.cc/JnqGV5DF/1.png" alt="助推器底部装饰" />
+                    <div class="flame"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mission-complete">
+            <h2 data-zh-tw="任務完成！" data-zh-cn="任务完成！" data-en="Mission Complete!">任務完成！</h2>
+            <p data-zh-tw="嫦娥六號成功進入軌道" 
+               data-zh-cn="嫦娥六号成功进入轨道"
+               data-en="Chang'e-6 has successfully entered orbit">
+                嫦娥六號成功進入軌道
+            </p>
+            <button class="restart-button" data-zh-tw="重新開始" data-zh-cn="重新开始" data-en="Restart">重新開始</button>
+        </div>
+    </div>
+
+    <script>
+        // 游戏状态
+        let gameState = {
+            currentStep: 1,
+            altitude: 0,
+            language: document.documentElement.lang || 'en',
+            rocketLaunched: false,
+// Add this to your gameState object
+secondShutdownShown: false,
+            countdown: false,
+            countdownValue: 5,
+            intervalId: null,
+            flightMode: false,
+            missionTime: 0,
+            timeLimits: {
+                boosterSeparation: 176.0795,
+                fairingSeparation: 326.4445,
+                firstStageSeparation: 485.1839,
+                secondStageIgnition: 488.1839,
+                secondStageShutdown: 735.0839, // 新增二级火箭关机时间点
+                secondStageSecondShutdown: 2133.5853, // New shutdown time
+                spacecraftSeparation: 2218.5653
+            },
+            timeAcceleration: 10, // 基础加速倍数
+            minTimeStep: 0.0001, // 最小时间步长，确保精度
+            lastTimeUpdate: 0 // 记录上次更新时间
+        };
+        
+        // 元素
+        const gameContainer = document.getElementById('game-container');
+        const rocketContainer = document.getElementById('rocket-container');
+        const rocket = document.querySelector('.rocket');
+        const firstStage = document.querySelector('.first-stage');
+        const secondStage = document.querySelector('.second-stage');
+        const fairingLeft = document.querySelector('.fairing.left');
+        const fairingRight = document.querySelector('.fairing.right');
+        const payload = document.querySelector('.payload');
+        const boosters = document.querySelectorAll('.booster');
+        const firstStageEngines = document.querySelectorAll('.first-stage .engine');
+        const secondStageEngines = document.querySelectorAll('.second-stage .engine');
+        const firstStageFlame = document.querySelector('.first-stage .flame');
+        const boosterFlames = document.querySelectorAll('.booster .flame');
+        const promptContainer = document.querySelector('.prompt-container');
+        const promptText = document.querySelector('.prompt-text');
+        const ignitionButton = document.querySelector('.ignition-button');
+        const progressSteps = document.querySelectorAll('.progress-step');
+        const altitudeValue = document.getElementById('altitude-value');
+        const altitudeLabel = document.getElementById('altitude-label');
+        const countdown = document.querySelector('.countdown');
+        const missionComplete = document.querySelector('.mission-complete');
+        const restartButton = document.querySelector('.restart-button');
+        const sceneTransition = document.querySelector('.scene-transition');
+        const stars = document.querySelector('.stars');
+        const earthBackdrop = document.querySelector('.earth-backdrop');
+        const flightIndicator = document.querySelector('.flight-indicator');
+        const spacecraftFocus = document.querySelector('.spacecraft-focus');
+        const cosmicVelocityDialog = document.querySelector('.cosmic-velocity-dialog');
+        const continueButton = document.querySelector('.continue-button');
+        const secondShutdownDialog = document.querySelector('.second-shutdown-dialog');
+        // 点击区域元素
+        const boosterClickLeft = document.getElementById('booster-click-left');
+        const boosterClickRight = document.getElementById('booster-click-right');
+        const fairingClickArea = document.getElementById('fairing-click');
+        const firstStageClickArea = document.getElementById('first-stage-click');
+        const payloadClickArea = document.getElementById('payload-click');
+        
+        // 可交互区域列表
+        const allClickableAreas = [
+            boosterClickLeft,
+            boosterClickRight,
+            fairingClickArea,
+            firstStageClickArea,
+            payloadClickArea
+        ];
+        
+        // 文本数据
+        const texts = {
+            'step-1': {
+                'en': 'Ignition and Liftoff',
+                'zh': '點火升空',
+                'zh_cn': '点火升空'
+            },
+            'step-2': {
+                'en': 'Booster Separation',
+                'zh': '助推器分離',
+                'zh_cn': '助推器分离'
+            },
+            'step-3': {
+                'en': 'Fairing Separation',
+                'zh': '整流罩分離',
+                'zh_cn': '整流罩分离'
+            },
+            'step-4': {
+                'en': 'First Stage Separation',
+                'zh': '一級火箭分離',
+                'zh_cn': '一级火箭分离'
+            },
+            'step-5': {
+                'en': 'Second Stage Ignition',
+                'zh': '二級火箭點火',
+                'zh_cn': '二级火箭点火'
+            },
+            'step-6': {
+                'en': 'Spacecraft Separation',
+                'zh': '星箭分離',
+                'zh_cn': '星箭分离'
+            },
+            'prompt-1': {
+                'en': 'Prepare to launch Chang\'e-6 mission',
+                'zh': '準備發射嫦娥六號任務',
+                'zh_cn': '准备发射嫦娥六号任务'
+            },
+            'prompt-2': {
+                'en': 'Rocket is ascending, click on boosters to separate them',
+                'zh': '火箭已上升，請點擊助推器進行分離',
+                'zh_cn': '火箭已上升，请点击助推器进行分离'
+            },
+            'prompt-3': {
+                'en': 'Click on the fairing to separate it',
+                'zh': '請點擊整流罩進行分離',
+                'zh_cn': '请点击整流罩进行分离'
+            },
+            'prompt-4': {
+                'en': 'Click on the first stage rocket to separate it',
+                'zh': '請點擊一級火箭進行分離',
+                'zh_cn': '请点击一级火箭进行分离'
+            },
+            'prompt-5': {
+                'en': 'Second stage engine ignition',
+                'zh': '二級火箭開始點火',
+                'zh_cn': '二级火箭开始点火'
+            },
+            'prompt-6': {
+                'en': 'Click on Chang\'e-6 for spacecraft separation',
+                'zh': '請點擊嫦娥六號進行星箭分離',
+                'zh_cn': '请点击嫦娥六号进行星箭分离'
+            },
+            'ignition': {
+                'en': 'Ignite',
+                'zh': '點火',
+                'zh_cn': '点火'
+            },
+            'altitude': {
+                'en': 'Time',
+                'zh': '時間',
+                'zh_cn': '时间'
+            },
+            'mission-complete-title': {
+                'en': 'Mission Complete!',
+                'zh': '任務完成！',
+                'zh_cn': '任务完成！'
+            },
+            'mission-complete-text': {
+                'en': 'Chang\'e-6 has successfully entered orbit',
+                'zh': '嫦娥六號成功進入軌道',
+                'zh_cn': '嫦娥六号成功进入轨道'
+            },
+            'restart': {
+                'en': 'Restart',
+                'zh': '重新開始',
+                'zh_cn': '重新开始'
+            },
+            'mission-failed-title': {
+                'en': 'Mission Failed!',
+                'zh': '任務失敗！',
+                'zh_cn': '任务失败！'
+            },
+            'mission-failed-text': {
+                'en': 'Failed to complete separation at the correct altitude',
+                'zh': '未能在正確的高度完成分離操作',
+                'zh_cn': '未能在正确的高度完成分离操作'
+            },
+            'cosmic-velocity-title': {
+                'en': 'First Cosmic Velocity Reached',
+                'zh': '已達第一宇宙速度',
+                'zh_cn': '已达第一宇宙速度'
+            },
+            'cosmic-velocity-text': {
+                'en': 'Velocity reached 7.9 km/s! Now can orbit the Earth',
+                'zh': '速度已達7.9 km/s！現在可以環繞地球飛行',
+                'zh_cn': '速度已达7.9 km/s！现在可以环绕地球飞行'
+            },
+            'continue-mission': {
+                'en': 'Continue Mission',
+                'zh': '繼續任務',
+                'zh_cn': '继续任务'
+            },
+'second-shutdown-title': {
+    'en': 'Entering Earth-Moon Transfer Orbit',
+    'zh': '進入地月轉移軌道',
+    'zh_cn': '进入地月转移轨道'
+},
+'second-shutdown-text': {
+    'en': 'Velocity reached about 10.9 km/s! Entering Earth-Moon transfer orbit',
+    'zh': '速度已達約10.9 km/s！進入地月轉移軌道',
+    'zh_cn': '速度已达约10.9 km/s！进入地月转移轨道'
+}
+        };
+        
+        // 创建飞行指示器（流星效果）
+        function createFlightIndicator() {
+            // 清空之前的星星
+            flightIndicator.innerHTML = '';
+            
+            // 创建20颗星星
+            for (let i = 0; i < 20; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                
+                // 随机位置和延迟
+                const left = Math.random() * 100;
+                const delay = Math.random() * 3;
+                const size = Math.random() * 2 + 1;
+                
+                star.style.left = `${left}%`;
+                star.style.animationDelay = `${delay}s`;
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                
+                flightIndicator.appendChild(star);
+            }
+            
+            flightIndicator.classList.add('active');
+        }
+        
+        // 隐藏所有可交互区域
+        function hideAllClickableAreas() {
+            allClickableAreas.forEach(area => {
+                area.classList.remove('active');
+            });
+        }
+        
+        // 根据当前步骤激活相应的可交互区域
+        function updateClickableAreas() {
+            hideAllClickableAreas();
+            const currentTime = gameState.missionTime;
+            const timeLimits = gameState.timeLimits;
+            
+            // 根据当前步骤和时间激活相应的可交互区域
+            if (gameState.currentStep === 2 && currentTime >= timeLimits.boosterSeparation) {
+                boosterClickLeft.classList.add('active');
+                boosterClickRight.classList.add('active');
+                boosterClickLeft.style.pointerEvents = 'auto';
+                boosterClickRight.style.pointerEvents = 'auto';
+                boosterClickLeft.style.cursor = 'pointer';
+                boosterClickRight.style.cursor = 'pointer';
+            } else if (gameState.currentStep === 3 && currentTime >= timeLimits.fairingSeparation) {
+                fairingClickArea.classList.add('active');
+                fairingClickArea.style.pointerEvents = 'auto';
+                fairingClickArea.style.cursor = 'pointer';
+            } else if (gameState.currentStep === 4 && currentTime >= timeLimits.firstStageSeparation) {
+                firstStageClickArea.classList.add('active');
+                firstStageClickArea.style.pointerEvents = 'auto';
+                firstStageClickArea.style.cursor = 'pointer';
+            } else if (gameState.currentStep === 6 && currentTime >= timeLimits.spacecraftSeparation) {
+                payloadClickArea.classList.add('active');
+                payloadClickArea.style.pointerEvents = 'auto';
+                payloadClickArea.style.cursor = 'pointer';
+            }
+        }
+        
+        // 记录每个任务的时间点
+        const taskTimes = [
+            0, // Ignition
+            gameState.timeLimits.boosterSeparation,
+            gameState.timeLimits.fairingSeparation,
+            gameState.timeLimits.firstStageSeparation,
+            gameState.timeLimits.secondStageIgnition,
+            gameState.timeLimits.spacecraftSeparation
+        ];
+        
+function startMissionTimer() {
+    if (gameState.intervalId) {
+        clearInterval(gameState.intervalId);
+    }
+    
+    const startTime = performance.now();
+    gameState.lastTimeUpdate = startTime;
+    
+    const timerInterval = setInterval(() => {
+        const now = performance.now();
+        const deltaTime = (now - gameState.lastTimeUpdate) / 1000; // 转换为秒
+        gameState.lastTimeUpdate = now;
+        
+        // 计算加速后的时间增量
+        let timeIncrement = deltaTime * getCurrentTimeAcceleration();
+        
+        // 确保不超过下一个关键时间点
+        const nextKeyTime = getNextKeyTime();
+        if (nextKeyTime !== null) {
+            const remainingToKeyTime = nextKeyTime - gameState.missionTime;
+            if (remainingToKeyTime > 0 && timeIncrement > remainingToKeyTime) {
+                timeIncrement = remainingToKeyTime;
+            }
+        }
+        
+        // 更新时间
+        gameState.missionTime += timeIncrement;
+        
+        // 更新显示（保留4位小数）
+        altitudeValue.textContent = gameState.missionTime.toFixed(4) + ' s';
+        
+        // 检查是否到达关键时间点
+        checkMissionTimePoint(gameState.missionTime);
+        
+    }, 16); // 约60fps的更新频率
+    
+    gameState.intervalId = timerInterval;
+}
+
+// 获取当前时间加速倍数
+
+function getCurrentTimeAcceleration() {
+    const currentTime = gameState.missionTime;
+    const timeLimits = gameState.timeLimits;
+    
+    // 计算每个阶段的目标持续时间（秒）
+    const targetDuration = 5; // 每个阶段目标持续5秒
+    
+    // 根据不同阶段设置不同的加速倍数
+    if (currentTime < timeLimits.boosterSeparation) {
+        // 0 - 176.0795s 阶段
+        return (timeLimits.boosterSeparation - 0) / targetDuration;
+    } else if (currentTime < timeLimits.fairingSeparation) {
+        // 176.0795 - 326.4445s 阶段
+        return (timeLimits.fairingSeparation - timeLimits.boosterSeparation) / targetDuration;
+    } else if (currentTime < timeLimits.firstStageSeparation) {
+        // 326.4445 - 485.1839s 阶段
+        return (timeLimits.firstStageSeparation - timeLimits.fairingSeparation) / targetDuration;
+    } else if (currentTime < timeLimits.secondStageIgnition) {
+        // 485.1839 - 488.1839s 阶段
+        return (timeLimits.secondStageIgnition - timeLimits.firstStageSeparation) / targetDuration;
+    } else if (currentTime < timeLimits.secondStageShutdown) {
+        // 488.1839 - 735.0839s 阶段
+        return (timeLimits.secondStageShutdown - timeLimits.secondStageIgnition) / targetDuration;
+    } else if (currentTime < timeLimits.secondStageSecondShutdown) {
+        // 735.0839 - 2133.5853s 阶段
+        return (timeLimits.secondStageSecondShutdown - timeLimits.secondStageShutdown) / targetDuration;
+    } else if (currentTime < timeLimits.spacecraftSeparation) {
+        // 2133.5853 - 2218.5653s 阶段
+        return (timeLimits.spacecraftSeparation - timeLimits.secondStageSecondShutdown) / targetDuration;
+    } else {
+        return 1; // 最后阶段恢复正常速度
+    }
+}
+
+// 获取下一个关键时间点
+function getNextKeyTime() {
+    const currentTime = gameState.missionTime;
+    const timeLimits = gameState.timeLimits;
+    
+    if (currentTime < timeLimits.boosterSeparation) {
+        return timeLimits.boosterSeparation;
+    } else if (currentTime < timeLimits.fairingSeparation) {
+        return timeLimits.fairingSeparation;
+    } else if (currentTime < timeLimits.firstStageSeparation) {
+        return timeLimits.firstStageSeparation;
+    } else if (currentTime < timeLimits.secondStageIgnition) {
+        return timeLimits.secondStageIgnition;
+    } else if (currentTime < timeLimits.secondStageShutdown) {
+        return timeLimits.secondStageShutdown;
+    } else if (currentTime < timeLimits.secondStageSecondShutdown) {
+        return timeLimits.secondStageSecondShutdown;
+    } else if (currentTime < timeLimits.spacecraftSeparation) {
+        return timeLimits.spacecraftSeparation;
+    } else {
+        return null; // 没有下一个关键时间点
+    }
+}
+
+// 修改后的checkMissionTimePoint函数
+function checkMissionTimePoint(currentTime) {
+    const timeLimits = gameState.timeLimits;
+    const precision = 0.0001; // 比较精度
+    
+    // 使用更精确的比较方式
+    const isTimeReached = (targetTime) => 
+        Math.abs(currentTime - targetTime) < precision || currentTime >= targetTime;
+    
+    if (gameState.currentStep === 2 && isTimeReached(timeLimits.boosterSeparation)) {
+        pauseTimerAt(timeLimits.boosterSeparation);
+        updateClickableAreas();
+    } else if (gameState.currentStep === 3 && isTimeReached(timeLimits.fairingSeparation)) {
+        pauseTimerAt(timeLimits.fairingSeparation);
+        updateClickableAreas();
+    } else if (gameState.currentStep === 4 && isTimeReached(timeLimits.firstStageSeparation)) {
+        pauseTimerAt(timeLimits.firstStageSeparation);
+        updateClickableAreas();
+    } else if (gameState.currentStep === 5 && isTimeReached(timeLimits.secondStageIgnition)) {
+        pauseTimerAt(timeLimits.secondStageIgnition);
+        updateClickableAreas();
+    } else if (gameState.currentStep === 6 && isTimeReached(timeLimits.spacecraftSeparation)) {
+        pauseTimerAt(timeLimits.spacecraftSeparation);
+        updateClickableAreas();
+    } else if (!gameState.cosmicVelocityShown && isTimeReached(timeLimits.secondStageShutdown)) {
+        pauseTimerAt(timeLimits.secondStageShutdown);
+        showCosmicVelocityDialog();
+        gameState.cosmicVelocityShown = true;
+    }else if (!gameState.secondShutdownShown && isTimeReached(timeLimits.secondStageSecondShutdown)) {
+        pauseTimerAt(timeLimits.secondStageSecondShutdown);
+        showSecondShutdownDialog();
+        gameState.secondShutdownShown = true;
+    }
+}
+
+// 精确暂停计时器在指定时间
+function pauseTimerAt(targetTime) {
+    clearInterval(gameState.intervalId);
+    gameState.missionTime = targetTime; // 确保时间精确
+    altitudeValue.textContent = targetTime.toFixed(4) + ' s';
+}        
+        // 显示第一宇宙速度对话框
+        function showCosmicVelocityDialog() {
+            const lang = gameState.language === 'zh-tw' || gameState.language === 'zh' ? 'zh' : 'en';
+            
+            // 更新对话框内容
+            cosmicVelocityDialog.querySelector('h2').textContent = 
+                texts['cosmic-velocity-title'][lang] || texts['cosmic-velocity-title']['en'];
+            cosmicVelocityDialog.querySelector('p').textContent = 
+                texts['cosmic-velocity-text'][lang] || texts['cosmic-velocity-text']['en'];
+            cosmicVelocityDialog.querySelector('.continue-button').textContent = 
+                texts['continue-mission'][lang] || texts['continue-mission']['en'];
+            
+            // 显示对话框
+            cosmicVelocityDialog.style.display = 'block';
+        }
+        
+        // 继续任务
+        function continueMission() {
+            cosmicVelocityDialog.style.display = 'none';
+            startMissionTimer();
+        }
+        
+        // 为继续按钮添加事件监听
+        if (continueButton) {
+            continueButton.addEventListener('click', continueMission);
+        }
+        
+// Add this with your other event listeners
+if (secondShutdownDialog) {
+    secondShutdownDialog.querySelector('.continue-button').addEventListener('click', continueMissionFromSecondShutdown);
+}
+
+        // 页面加载完成后初始化
+        window.addEventListener('load', () => {
+            // 初始化点火按钮
+            const ignitionButton = document.querySelector('.ignition-button');
+            if (ignitionButton) {
+                ignitionButton.addEventListener('click', () => {
+                    if (gameState.currentStep === 1) {
+                        startCountdown();
+                    }
+                });
+            }
+
+            // 初始化重启按钮
+            document.querySelectorAll('.restart-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    // 直接刷新页面，不执行任何重置操作
+                    location.reload();
+                });
+            });
+
+            // 初始化助推器点击事件
+            const boosterClickLeft = document.getElementById('booster-click-left');
+            const boosterClickRight = document.getElementById('booster-click-right');
+            if (boosterClickLeft && boosterClickRight) {
+                boosterClickLeft.addEventListener('click', () => {
+                    if (gameState.currentStep === 2 && gameState.missionTime >= gameState.timeLimits.boosterSeparation) {
+                        detachAllBoosters();
+                    }
+                });
+                boosterClickRight.addEventListener('click', () => {
+                    if (gameState.currentStep === 2 && gameState.missionTime >= gameState.timeLimits.boosterSeparation) {
+                        detachAllBoosters();
+                    }
+                });
+            }
+
+            // 初始化整流罩点击事件
+            const fairingClickArea = document.getElementById('fairing-click');
+            if (fairingClickArea) {
+                fairingClickArea.addEventListener('click', () => {
+                    if (gameState.currentStep === 3 && gameState.missionTime >= gameState.timeLimits.fairingSeparation) {
+                        detachFairings();
+                    }
+                });
+            }
+
+            // 初始化一级火箭点击事件
+            const firstStageClickArea = document.getElementById('first-stage-click');
+            if (firstStageClickArea) {
+                firstStageClickArea.addEventListener('click', () => {
+                    if (gameState.currentStep === 4 && gameState.missionTime >= gameState.timeLimits.firstStageSeparation) {
+                        firstStageDetach();
+                    }
+                });
+            }
+
+            // 初始化载荷点击事件
+            const payloadClickArea = document.getElementById('payload-click');
+            if (payloadClickArea) {
+                payloadClickArea.addEventListener('click', () => {
+                    if (gameState.currentStep === 6 && gameState.missionTime >= gameState.timeLimits.spacecraftSeparation) {
+                        payloadSeparate();
+                    }
+                });
+            }
+
+            // 初始化语言
+            updateLanguage();
+        });
+        
+        // 更新语言
+        function updateLanguage() {
+            const lang = gameState.language;
+            
+            // 更新 document 语言
+            document.documentElement.lang = gameState.language;
+            
+            // 更新所有步骤文本
+            document.querySelectorAll('.progress-step').forEach((step, index) => {
+                step.textContent = texts[`step-${index + 1}`][lang] || texts[`step-${index + 1}`]['en'];
+            });
+            
+            // 更新提示文本
+            updatePromptText();
+            
+            // 更新时间标签
+            document.getElementById('altitude-label').textContent = (texts['altitude'][lang] || texts['altitude']['en']) + ': ';
+            
+            // 更新任务完成对话框
+            const missionComplete = document.querySelector('.mission-complete');
+            if (missionComplete) {
+                missionComplete.querySelector('h2').textContent = texts['mission-complete-title'][lang] || texts['mission-complete-title']['en'];
+                missionComplete.querySelector('p').textContent = texts['mission-complete-text'][lang] || texts['mission-complete-text']['en'];
+                missionComplete.querySelector('.restart-button').textContent = texts['restart'][lang] || texts['restart']['en'];
+            }
+
+            // 更新点火按钮
+            const ignitionButton = document.querySelector('.ignition-button');
+            if (ignitionButton && gameState.currentStep === 1) {
+                ignitionButton.textContent = texts['ignition'][lang] || texts['ignition']['en'];
+            }
+        }
+        
+        function updatePromptText() {
+            const lang = gameState.language;
+            const taskTime = taskTimes[gameState.currentStep - 1] || 0;
+            // 如果聚焦嫦娥六号，直接隐藏提示
+            if (spacecraftFocus.classList.contains('visible')) {
+                promptContainer.style.display = 'none';
+                promptText.textContent = '';
+                ignitionButton.style.display = 'none';
+                return;
+            }
+            if (gameState.missionTime >= taskTime - 1 && gameState.missionTime < taskTime + 3) {
+                promptContainer.style.display = 'block';
+                promptText.textContent = texts[`prompt-${gameState.currentStep}`][lang] || texts[`prompt-${gameState.currentStep}`]['en'];
+                if (gameState.currentStep === 1) {
+                    ignitionButton.textContent = texts['ignition'][lang] || texts['ignition']['en'];
+                    ignitionButton.style.display = 'inline-block';
+                } else {
+                    ignitionButton.style.display = 'none';
+                }
+            } else {
+                promptContainer.style.display = 'none';
+                promptText.textContent = '';
+                ignitionButton.style.display = 'none';
+            }
+        }
+        // 显示二级火箭第二次关机对话框
+function showSecondShutdownDialog() {
+    const lang = gameState.language === 'zh-tw' || gameState.language === 'zh' ? 'zh' : 'en';
+    
+    // 更新对话框内容
+    secondShutdownDialog.querySelector('h2').textContent = 
+        texts['second-shutdown-title'][lang] || texts['second-shutdown-title']['en'];
+    secondShutdownDialog.querySelector('p').textContent = 
+        texts['second-shutdown-text'][lang] || texts['second-shutdown-text']['en'];
+    secondShutdownDialog.querySelector('.continue-button').textContent = 
+        texts['continue-mission'][lang] || texts['continue-mission']['en'];
+    
+    // 显示对话框
+    secondShutdownDialog.style.display = 'block';
+}
+
+// 继续任务
+function continueMissionFromSecondShutdown() {
+    secondShutdownDialog.style.display = 'none';
+    startMissionTimer();
+}
+        // 语言同步优化
+        let languageInitialized = false;
+        function applyInitialLanguage(lang) {
+            gameState.language = lang;
+            document.documentElement.lang = lang;
+            updateLanguage();
+            updatePromptText();
+            languageInitialized = true;
+        }
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'setLanguage') {
+                applyInitialLanguage(event.data.lang);
+            } else if (event.data && event.data.type === 'requestLanguage') {
+                event.source.postMessage({ 
+                    type: 'setLanguage', 
+                    lang: gameState.language === 'zh-tw' ? 'zh' : gameState.language 
+                }, '*');
+            }
+        });
+        // 页面加载时请求父页面发送当前语言，收到后再渲染UI
+        window.addEventListener('DOMContentLoaded', () => {
+            window.parent.postMessage({ type: 'requestLanguage' }, '*');
+            setTimeout(() => {
+                if (!languageInitialized) {
+                    applyInitialLanguage(document.documentElement.lang || 'en');
+                }
+            }, 1000);
+        });
+        
+        // 点火和发射
+        function startCountdown() {
+            gameState.countdown = true;
+            countdown.classList.add('visible');
+            
+            // 立即隐藏任务提示
+            promptContainer.style.display = 'none';
+            promptText.textContent = '';
+            ignitionButton.style.display = 'none';
+
+            // 速度更快的倒计时
+            gameState.countdownValue = 3; // 减少到3秒
+            countdown.textContent = gameState.countdownValue;
+            
+            gameState.intervalId = setInterval(() => {
+                gameState.countdownValue--;
+                countdown.textContent = gameState.countdownValue;
+                
+                if (gameState.countdownValue <= 0) {
+                    clearInterval(gameState.intervalId);
+                    setTimeout(() => {
+                        countdown.classList.remove('visible');
+                        startLaunch();
+                    }, 500); // 加快倒计时结束后的延迟
+                }
+            }, 800); // 加快倒计时速度
+        }
+        
+        // 切换到飞行模式
+        function switchToFlightMode() {
+            // 激活场景过渡
+            sceneTransition.classList.add('active');
+            
+            setTimeout(() => {
+                // 重置火箭位置到屏幕中央
+                rocketContainer.style.transition = 'none';
+                rocketContainer.style.transform = 'translateY(0)';
+                rocket.style.bottom = '50%';
+                rocket.style.transform = 'rotateX(-10deg) translateY(50%)';
+                
+                // 创建飞行效果
+                createFlightIndicator();
+                
+                // 淡出过渡 - 加快速度
+                setTimeout(() => {
+                    sceneTransition.classList.remove('active');
+                    gameState.flightMode = true;
+                    
+                    // 升空后聚焦时停止播放音效
+                    audioFlight.pause();
+                    audioFlight.currentTime = 0;
+                    
+                    // 加快恢复过渡效果
+                    setTimeout(() => {
+                        rocketContainer.style.transition = 'transform 2.5s ease-out'; // 更快的过渡
+                        
+                        // 进入下一步
+                        advanceToStep(2);
+                        
+                        // 更新可交互区域
+                        updateClickableAreas();
+                    }, 300); // 从500ms减少到300ms
+                }, 500); // 从1000ms减少到500ms
+            }, 500); // 从1000ms减少到500ms
+        }
+        
+        function startLaunch() {
+            // 激活所有一级火箭和助推器引擎
+            firstStageEngines.forEach(engine => {
+                engine.classList.add('ignited');
+            });
+            
+            firstStageFlame.classList.add('active');
+            
+            boosterFlames.forEach(flame => {
+                flame.classList.add('active');
+            });
+            
+            // 播放火箭发射音效
+            audioFlight.currentTime = 0;
+            audioFlight.play().catch(error => {
+                console.log('Flight sound error:', error);
+            });
+
+            // 开始火箭上升
+            rocketContainer.style.transform = 'translateY(-120vh)';
+            rocket.style.bottom = '0';
+            earthBackdrop.classList.add('fade-away');
+            
+            gameState.rocketLaunched = true;
+            
+            // 更新游戏状态
+            completeStep(1);
+            
+            // 切换到飞行模式
+            setTimeout(() => {
+                switchToFlightMode();
+            }, 1500);
+
+            // 开始任务计时器
+            startMissionTimer();
+        }
+        
+        // 分离所有助推器
+        function detachAllBoosters() {
+            boosters[0].classList.add('detached-left-front');
+            boosters[1].classList.add('detached-right-front');
+            boosters[2].classList.add('detached-left-back');
+            boosters[3].classList.add('detached-right-back');
+            
+            // 隐藏助推器的可交互区域
+            boosterClickLeft.classList.remove('active');
+            boosterClickRight.classList.remove('active');
+            
+            completeStep(2);
+            advanceToStep(3);
+        }
+        
+        // 助推器分离事件
+        boosterClickLeft.addEventListener('click', () => {
+            if (gameState.currentStep === 2 && gameState.missionTime >= gameState.timeLimits.boosterSeparation) {
+                detachAllBoosters();
+            }
+        });
+        
+        boosterClickRight.addEventListener('click', () => {
+            if (gameState.currentStep === 2 && gameState.missionTime >= gameState.timeLimits.boosterSeparation) {
+                detachAllBoosters();
+            }
+        });
+        
+        // 整流罩分离事件
+        fairingClickArea.addEventListener('click', () => {
+            if (gameState.currentStep === 3 && gameState.missionTime >= gameState.timeLimits.fairingSeparation) {
+                detachFairings();
+            }
+        });
+        
+        function detachFairings() {
+            fairingLeft.classList.add('detached-left');
+            fairingRight.classList.add('detached-right');
+            payload.classList.add('visible');
+            
+            // 隐藏整流罩的可交互区域
+            fairingClickArea.classList.remove('active');
+            
+            completeStep(3);
+            advanceToStep(4);
+        }
+        
+        // 一级火箭分离事件
+        firstStageClickArea.addEventListener('click', () => {
+            if (gameState.currentStep === 4 && gameState.missionTime >= gameState.timeLimits.firstStageSeparation) {
+                firstStageDetach();
+            }
+        });
+        
+        function firstStageDetach() {
+            firstStage.classList.add('detached');
+            firstStageFlame.classList.remove('active');
+            
+            // 隐藏一级火箭的可交互区域
+            firstStageClickArea.classList.remove('active');
+            
+            completeStep(4);
+            
+            // 自动进入二级火箭点火阶段 - 加快速度
+            setTimeout(() => {
+                secondStageIgnite();
+            }, 1000); // 从2000ms减少到1000ms
+        }
+        
+        // 二级火箭自动点火
+        function secondStageIgnite() {
+            advanceToStep(5);
+            
+            // 激活二级火箭引擎
+            secondStageEngines.forEach(engine => {
+                engine.classList.add('ignited');
+                engine.style.opacity = '1';
+            });
+            
+            // 添加二级火箭火焰
+            if (secondStage) {
+                // 先移除现有的火焰
+                const existingFlames = secondStage.querySelectorAll('.flame');
+                existingFlames.forEach(flame => flame.remove());
+                
+                // 创建新的火焰元素
+                const secondStageFlame = document.createElement('div');
+                secondStageFlame.className = 'flame active';
+                secondStage.appendChild(secondStageFlame);
+            }
+            
+            // 显示一段时间后进入下一步 - 加快速度
+            setTimeout(() => {
+                completeStep(5);
+                advanceToStep(6);
+                
+                // 更新可交互区域
+                updateClickableAreas();
+            }, 1500); // 从3000ms减少到1500ms
+        }
+        
+        // 星箭分离事件
+        payloadClickArea.addEventListener('click', () => {
+            if (gameState.currentStep === 6 && gameState.missionTime >= gameState.timeLimits.spacecraftSeparation) {
+                payloadSeparate();
+            }
+        });
+        
+        function payloadSeparate() {
+            payload.classList.add('separated');
+            payloadClickArea.classList.remove('active');
+            window.location.href = 'change.html';
+        }
+        
+        // 更新游戏步骤
+        function completeStep(step) {
+            const stepElement = document.querySelector(`.step-${step}`);
+            stepElement.classList.remove('active');
+            stepElement.classList.add('completed');
+            
+            // 重新启动计时器，但不重置时间
+            if (step < 6) {
+                startMissionTimer();
+            }
+        }
+        
+        function advanceToStep(step) {
+            gameState.currentStep = step;
+            const stepElement = document.querySelector(`.step-${step}`);
+            stepElement.classList.add('active');
+            
+            updatePromptText();
+            
+            // 如果是第一次进入步骤2，开始高度更新
+            if (step === 2 && gameState.altitude === 0) {
+                startMissionTimer();
+            }
+            
+            // 更新可交互区域
+            updateClickableAreas();
+        }
+        
+        // 显示任务完成
+        function showMissionComplete() {
+            const missionComplete = document.querySelector('.mission-complete');
+            if (missionComplete) {
+                // 确保对话框内容使用当前语言
+                const lang = gameState.language === 'zh-tw' || gameState.language === 'zh' ? 'zh' : 'en';
+                missionComplete.querySelector('h2').textContent = texts['mission-complete-title'][lang] || texts['mission-complete-title']['en'];
+                missionComplete.querySelector('p').textContent = texts['mission-complete-text'][lang] || texts['mission-complete-text']['en'];
+                missionComplete.querySelector('.restart-button').textContent = texts['restart'][lang] || texts['restart']['en'];
+                
+                // 显示对话框
+                missionComplete.style.display = 'block';
+            }
+        }
+
+        // 音效元素
+        const audioClick = new Audio('music/sounds-click.mp3');
+        const audioAI = new Audio('music/sounds-ai.mp3');
+        const audioFlight = new Audio('music/sounds-flight.mp3');
+
+        // 为音量控制按钮添加点击音效
+        const musicControlBtn = document.getElementById('musicControlBtn');
+        if (musicControlBtn) {
+            musicControlBtn.addEventListener('click', () => {
+                audioAI.currentTime = 0;
+                audioAI.play().catch(e => console.log('AI sound error:', e));
+            });
+        }
+
+        // 为AI助手添加音效
+        const assistantFrame = document.getElementById('assistantFrame');
+        if (assistantFrame) {
+            // 监听AI助手的点击和缩放事件
+            assistantFrame.addEventListener('load', () => {
+                const assistantWindow = assistantFrame.contentWindow;
+                if (assistantWindow) {
+                    // 只监听AI助手图标的点击事件
+                    assistantWindow.addEventListener('click', (event) => {
+                        // 检查点击的是否是AI助手图标或缩放按钮
+                        const target = event.target;
+                        if (target.classList.contains('assistant-icon') || target.classList.contains('resize-button')) {
+                            audioClick.currentTime = 0;
+                            audioClick.play().catch(e => console.log('Click sound error:', e));
+                        }
+                    });
+
+                    // 监听AI助手的缩放事件
+                    const observer = new MutationObserver((mutations) => {
+                        mutations.forEach((mutation) => {
+                            if (mutation.attributeName === 'style' && 
+                                (mutation.target.classList.contains('assistant-dialog') || 
+                                 mutation.target.classList.contains('resize-button'))) {
+                                audioClick.currentTime = 0;
+                                audioClick.play().catch(e => console.log('Click sound error:', e));
+                            }
+                        });
+                    });
+                    observer.observe(assistantFrame, { attributes: true });
+                }
+            });
+        }
+
+        // 兼容自动播放策略，首次用户交互后允许播放
+        function enableAudioPlayback() {
+            if (audioClick) audioClick.load();
+            if (audioAI) audioAI.load();
+            if (audioClick) audioClick.play().catch(() => {});
+            if (audioAI) audioAI.play().catch(() => {});
+            if (audioClick) audioClick.pause();
+            if (audioAI) audioAI.pause();
+            window.removeEventListener('click', enableAudioPlayback);
+        }
+        window.addEventListener('click', enableAudioPlayback);
+
+        // 监听来自AI助手iframe的缩放按钮点击消息
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'ai-minimize-click') {
+                audioClick.currentTime = 0;
+                audioClick.play();
+            }
+        });
+
+        // 添加/恢复切换到嫦娥六号特写的函数
+        function switchToSpacecraftFocus() {
+            // 激活场景过渡
+            sceneTransition.classList.add('active');
+            setTimeout(() => {
+                // 隐藏火箭
+                rocketContainer.style.opacity = '0';
+                setTimeout(() => {
+                    // 显示嫦娥六号特写
+                    spacecraftFocus.classList.add('visible');
+                    // 隐藏任务提示
+                    promptContainer.style.display = 'none';
+                    promptText.textContent = '';
+                    ignitionButton.style.display = 'none';
+                    // 淡出过渡
+                    setTimeout(() => {
+                        sceneTransition.classList.remove('active');
+                        // 完成最后一步
+                        completeStep(6);
+                        // 延迟显示任务完成
+                        setTimeout(() => {
+                            showMissionComplete();
+                        }, 1000);
+                    }, 500);
+                }, 300);
+            }, 500);
+        }
+    </script>
+</body>
+</html>
