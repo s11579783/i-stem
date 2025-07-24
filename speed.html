@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-cn">
 <head>
@@ -1575,10 +1576,11 @@ function continueMissionFromSecondShutdown() {
         });
         // 页面加载时请求父页面发送当前语言，收到后再渲染UI
         window.addEventListener('DOMContentLoaded', () => {
+            applyInitialLanguage('zh-cn');
             window.parent.postMessage({ type: 'requestLanguage' }, '*');
             setTimeout(() => {
                 if (!languageInitialized) {
-                    applyInitialLanguage();
+                    applyInitialLanguage(document.documentElement.lang || 'zh-cn');
                 }
             }, 1000);
         });
