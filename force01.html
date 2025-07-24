@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关卡1：空间站对接任务 - 作用力与反作用力模拟</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            background-color: #000;
+            color: #e0e0ff;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* 加载页面样式 */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        #loading-content {
+            max-width: 90%;  /* 改为百分比宽度，适应不同屏幕 */
+            max-height: 80vh; /* 限制最大高度 */
+            overflow-y: auto; /* 添加滚动条 */
+            padding: 20px;   /* 减少内边距 */
+            margin: 10px;    /* 添加外边距 */
+            background-color: rgba(10, 20, 40, 0.9);
+            border: 2px solid #4fc3f7;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(79, 195, 247, 0.5);        }
+        
+        #loading-title {
+            color: #4fc3f7;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        
+        #loading-text {
+            text-align: left;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            font-size: 14px; /* 减小字体大小 */
+        }
+        
+        #loading-text p {
+            margin-bottom: 10px;
+        }
+        
+        .quiz-question {
+            margin: 10px 0;
+            font-size: 14px;
+            text-align: left;
+        }
+        
+        .quiz-options {
+            display: flex;
+            gap: 8px;
+            margin-top: 5px;
+            flex-wrap: wrap; /* 选项可以换行 */
+        }
+        
+        .quiz-option {
+            padding: 4px 8px;
+            font-size: 13px;
+            background-color: rgba(79, 195, 247, 0.2);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .quiz-option:hover {
+            background-color: rgba(79, 195, 247, 0.4);
+        }
+        
+        .quiz-option.selected {
+            background-color: #4fc3f7;
+            color: #000;
+        }
+        
+        #quiz-feedback {
+            color: #ff5252;
+            margin-top: 15px;
+            min-height: 24px;
+        }
+        
+        #start-btn {
+            background: linear-gradient(to bottom, #4fc3f7, #1976d2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            margin-top: 20px;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        #start-btn.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        #start-btn:hover {
+            background: linear-gradient(to bottom, #64b5f6, #1565c0);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* 游戏主界面样式 */
+        #game-screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+        }
+        
+        h1 {
+            color: #4fc3f7;
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+            margin-bottom: 10px;
+            padding-top: 20px;
+        }
+        
+        p {
+            margin: 5px 0;
+        }
+        
+        #game-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        #rocket {
+            position: absolute;
+            width: 210px;
+            height: 120px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 120"><defs><linearGradient id="rocketGradient" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="%23e0e0e0"/><stop offset="100%" stop-color="%23b0b0b0"/></linearGradient></defs><rect x="80" y="0" width="50" height="120" fill="url(%23rocketGradient)" stroke="%23ffffff" stroke-width="1"/><rect x="0" y="10" width="80" height="40" fill="%231a237e"/><rect x="130" y="10" width="80" height="40" fill="%231a237e"/><circle cx="105" cy="10" r="6" fill="%234fc3f7" opacity="0.8"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            transition: transform 0.1s;
+            z-index: 1;
+        }
+        
+        #space-station {
+            position: absolute;
+            width: 350px;
+            height: 300px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 300"><defs><linearGradient id="metalGradient" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="%23e0e0e0"/><stop offset="100%" stop-color="%23b0b0b0"/></linearGradient><linearGradient id="solarGradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%231a237e"/><stop offset="100%" stop-color="%230d47a1"/></linearGradient></defs><!-- 核心舱 --><rect x="150" y="0" width="50" height="150" fill="url(%23metalGradient)" stroke="%23ffffff" stroke-width="1"/><rect x="125" y="30" width="25" height="25" fill="url(%23solarGradient)"/><rect x="200" y="30" width="25" height="25" fill="url(%23solarGradient)"/><rect x="100" y="100" width="50" height="25" fill="url(%23solarGradient)"/><rect x="200" y="100" width="50" height="25" fill="url(%23solarGradient)"/><!-- 实验舱1 --><rect x="200" y="150" width="150" height="50" fill="url(%23metalGradient)" stroke="%23ffffff" stroke-width="1"/><rect x="280" y="50" width="50" height="100" fill="url(%23solarGradient)"/><rect x="280" y="200" width="50" height="100" fill="url(%23solarGradient)"/><!-- 实验舱2 --><rect x="0" y="150" width="150" height="50" fill="url(%23metalGradient)" stroke="%23ffffff" stroke-width="1"/><rect x="20" y="50" width="50" height="100" fill="url(%23solarGradient)"/><rect x="20" y="200" width="50" height="100" fill="url(%23solarGradient)"/><!-- 中转 --><rect x="150" y="150" width="50" height="50" fill="url(%23metalGradient)" stroke="%23ffffff" stroke-width="1"/><!-- 对接端口 --><circle cx="175" cy="190" r="6" fill="%234fc3f7" opacity="0.8"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            z-index: 5;
+            filter: drop-shadow(0 0 15px rgba(79, 195, 247, 0.7));
+        }
+        
+        #thrust {
+            position: absolute;
+            width: 60px;
+            height: 80px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 60"><defs><radialGradient id="flameGradient" cx="50%" cy="100%" r="100%" fx="50%" fy="100%"><stop offset="0%" stop-color="%23ffeb3b"/><stop offset="50%" stop-color="%23ff9800"/><stop offset="100%" stop-color="%23f44336"/></radialGradient></defs><path d="M30,80 C10,60 10,40 30,20 C50,40 50,60 30,80 Z" fill="url(%23flameGradient)" opacity="0.9"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            opacity: 0;
+            transition: opacity 0.1s;
+            z-index: 10;
+        }
+        
+        #force-indicator {
+            position: absolute;
+            width: 200px;
+            height: 100px;
+            right: -220px;
+            top: 0;
+            z-index: 15;
+        }
+        
+        .force-arrow {
+            position: absolute;
+            width: 0;
+            height: 0;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        #arrow-up {
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 35px solid #ffa952;
+            top: 0;
+            left: 180px;
+        }
+        
+        #arrow-down {
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 35px solid #ffa952;
+            bottom: 0;
+            left: 180px;
+        }
+        
+        #arrow-left {
+            border-top: 20px solid transparent;
+            border-bottom: 20px solid transparent;
+            border-right: 35px solid #ffa952;
+            top: 32px;
+            left: 155px;
+        }
+        
+        #arrow-right {
+            border-top: 20px solid transparent;
+            border-bottom: 20px solid transparent;
+            border-left: 35px solid #ffa952;
+            top: 32px;
+            left: 225px;
+        }
+        
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            margin: 0 auto;
+            padding: 15px;
+            max-width: 90%;
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 1px solid #4fc3f7;
+            border-radius: 8px;
+            display: inline-block;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.2);
+            z-index: 20;
+        }
+        
+        .instruction-group {
+            display: inline-block;
+            margin: 0 15px;
+            vertical-align: top;
+            text-align: left;
+        }
+        
+        #fuel-gauge-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 200px;
+            z-index: 20;
+            text-align: left;
+        }
+        
+        #fuel-label {
+            color: #4fc3f7;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+        
+        #fuel-gauge {
+            width: 100%;
+            height: 20px;
+            background-color: #111;
+            border: 1px solid #4fc3f7;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        #fuel-level {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(to right, #00e676, #00c853);
+            transition: width 0.3s;
+            box-shadow: 0 0 10px rgba(0, 230, 118, 0.5);
+        }
+        
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border: 2px solid #4fc3f7;
+            border-radius: 15px;
+            display: none;
+            z-index: 100;
+            max-width: 80%;
+            box-shadow: 0 0 30px rgba(79, 195, 247, 0.5);
+            -webkit-backdrop-filter: blur(5px); /* 添加这一行 */
+            backdrop-filter: blur(5px);
+        }
+        
+        #message-title {
+            color: #4fc3f7;
+            margin-top: 0;
+            font-size: 28px;
+        }
+        
+        #message-text {
+            font-size: 18px;
+            margin-bottom: 25px;
+            white-space: pre-line;
+        }
+        
+        button {
+            background: linear-gradient(to bottom, #4fc3f7, #1976d2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 25px;
+            font-size: 16px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:hover {
+            background: linear-gradient(to bottom, #64b5f6, #1565c0);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            animation: twinkle 2s infinite alternate;
+        }
+        
+        @keyframes twinkle {
+            0% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+        
+        .shooting-star {
+            position: absolute;
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(to right, transparent, white);
+            border-radius: 50%;
+            animation: shooting 5s linear infinite;
+            opacity: 0;
+            transform: rotate(-45deg);
+        }
+        
+        @keyframes shooting {
+            0% { transform: translateX(0) translateY(0) rotate(-45deg); opacity: 0; }
+            10% { opacity: 1; }
+            100% { transform: translateX(2000px) translateY(-2000px) rotate(-45deg); opacity: 0; }
+        }
+        
+        #physics-law {
+            font-style: italic;
+            margin-top: 15px;
+            color: #4fc3f7;
+            font-size: 18px;
+        }
+        
+        #header {
+            position: relative;
+            z-index: 20;
+        }
+    </style>
+</head>
+<body>
+    <!-- 加载页面 -->
+    <div id="loading-screen">
+        <div id="loading-content">
+            <h2 id="loading-title">关卡1：空间站对接任务</h2>
+            <div id="loading-text">
+                <p><strong>游戏说明：</strong></p>
+                <p>这是一个模拟火箭与空间站对接的物理游戏，展示了牛顿第三定律（作用力与反作用力）的原理。</p>
+                
+                <p><strong>控制方式：</strong></p>
+                
+                <div class="quiz-question">
+                    <p>↑ 火焰向上喷射 → 火箭______运动</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" data-question="1" data-answer="向上">向上</div>
+                        <div class="quiz-option" data-question="1" data-answer="向下">向下</div>
+                    </div>
+                </div>
+                
+                <div class="quiz-question">
+                    <p>↓ 火焰向下喷射 → 火箭______运动</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" data-question="2" data-answer="向上">向上</div>
+                        <div class="quiz-option" data-question="2" data-answer="向下">向下</div>
+                    </div>
+                </div>
+                
+                <div class="quiz-question">
+                    <p>← 火焰向左喷射 → 火箭______运动</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" data-question="3" data-answer="向左">向左</div>
+                        <div class="quiz-option" data-question="3" data-answer="向右">向右</div>
+                    </div>
+                </div>
+                
+                <div class="quiz-question">
+                    <p>→ 火焰向右喷射 → 火箭______运动</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" data-question="4" data-answer="向左">向左</div>
+                        <div class="quiz-option" data-question="4" data-answer="向右">向右</div>
+                    </div>
+                </div>
+                
+                <div id="quiz-feedback"></div>
+                
+                <p><strong>游戏目标：</strong></p>
+                <p>控制火箭与空间站对接，同时注意燃料消耗。</p>
+                
+                <p><strong>物理原理：</strong></p>
+                <p>根据牛顿第三定律，火箭喷射火焰的方向与火箭运动方向相反。火焰向下喷射会产生向上的反作用力，推动火箭向上运动。</p>
+            </div>
+            <button id="start-btn">开始游戏</button>
+        </div>
+    </div>
+    
+    <!-- 游戏主界面 -->
+    <div id="game-screen">
+        <div id="header">
+            <h1>关卡1：空间站对接任务</h1>
+            <p>使用方向键控制火箭燃料喷射方向，体验牛顿第三定律</p>
+            <p id="physics-law">作用力与反作用力大小相等，方向相反</p>
+        </div>
+        
+        <div id="game-container">
+            <div id="thrust"></div>
+            <div id="rocket"></div>
+            <div id="force-indicator">
+                <div id="arrow-up" class="force-arrow"></div>
+                <div id="arrow-down" class="force-arrow"></div>
+                <div id="arrow-left" class="force-arrow"></div>
+                <div id="arrow-right" class="force-arrow"></div>
+            </div>
+            <div id="space-station"></div>
+
+            <div id="message">
+                <h2 id="message-title">任务完成！</h2>
+                <p id="message-text">你成功完成了对接任务！展示了作用力与反作用力的原理！</p>
+                <button id="restart-btn">重新开始</button>
+            </div>
+        </div>
+        
+        <div id="fuel-gauge-container">
+            <div id="fuel-label">燃料剩余: <span id="fuel-display">100</span>%</div>
+            <div id="fuel-gauge">
+                <div id="fuel-level"></div>
+            </div>
+        </div>
+        
+        <div id="instructions">
+            <div class="instruction-group">
+                <p><strong>↑ 火焰向上喷射</strong> → 火箭向下运动</p>
+                <p><strong>↓ 火焰向下喷射</strong> → 火箭向上运动</p>
+            </div>
+            <div class="instruction-group">
+                <p><strong>← 火焰向左喷射</strong> → 火箭向右运动</p>
+                <p><strong>→ 火焰向右喷射</strong> → 火箭向左运动</p>
+            </div>
+            <div class="instruction-group">
+                <p><strong>目标: </strong>与空间站对接</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 游戏元素
+        const loadingScreen = document.getElementById('loading-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const startBtn = document.getElementById('start-btn');
+        const quizOptions = document.querySelectorAll('.quiz-option');
+        const quizFeedback = document.getElementById('quiz-feedback');
+        const rocket = document.getElementById('rocket');
+        const spaceStation = document.getElementById('space-station');
+        const thrust = document.getElementById('thrust');
+        const fuelLevel = document.getElementById('fuel-level');
+        const fuelDisplay = document.getElementById('fuel-display');
+        const message = document.getElementById('message');
+        const messageTitle = document.getElementById('message-title');
+        const messageText = document.getElementById('message-text');
+        const restartBtn = document.getElementById('restart-btn');
+        const gameContainer = document.getElementById('game-container');
+        const forceIndicator = document.getElementById('force-indicator');
+        const arrowUp = document.getElementById('arrow-up');
+        const arrowDown = document.getElementById('arrow-down');
+        const arrowLeft = document.getElementById('arrow-left');
+        const arrowRight = document.getElementById('arrow-right');
+        
+        // 正确答案
+        const correctAnswers = {
+            "1": "向下",
+            "2": "向上",
+            "3": "向右",
+            "4": "向左"
+        };
+        
+        // 用户答案
+        const userAnswers = {};
+        let allCorrect = false;
+        
+        // 选择答案
+        quizOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                const questionId = this.dataset.question;
+                const answer = this.dataset.answer;
+                
+                // 移除同问题的其他选项的选中状态
+                document.querySelectorAll(`.quiz-option[data-question="${questionId}"]`).forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                
+                // 添加当前选项的选中状态
+                this.classList.add('selected');
+                
+                // 保存用户答案
+                userAnswers[questionId] = answer;
+                
+                // 检查所有答案
+                checkAnswers();
+            });
+        });
+        
+        // 检查答案
+        function checkAnswers() {
+            allCorrect = true;
+            
+            for (const questionId in correctAnswers) {
+                if (userAnswers[questionId] !== correctAnswers[questionId]) {
+                    allCorrect = false;
+                    break;
+                }
+            }
+            
+            if (allCorrect) {
+                quizFeedback.textContent = "回答正确！你已经掌握了牛顿第三定律的基本原理。";
+                quizFeedback.style.color = "#00e676";
+                startBtn.classList.add('active');
+            } else {
+                quizFeedback.textContent = "作用力与反作用力是一对奇怪的好朋友，它们大小相等，方向相反。";
+                quizFeedback.style.color = "#ff5252";
+                startBtn.classList.remove('active');
+            }
+        }
+        
+        // 开始游戏
+        startBtn.addEventListener('click', function() {
+            if (allCorrect) {
+                loadingScreen.style.display = 'none';
+                gameScreen.style.display = 'block';
+                initGame();
+            }
+        });
+        
+        // 游戏状态
+        let rocketX = window.innerWidth / 2;
+        let rocketY = window.innerHeight * 0.7;
+        let rocketVX = 0;
+        let rocketVY = 0;
+        let fuel = 100;
+        let isDocked = false;
+        let gameOver = false;
+        
+        // 创建星星背景
+        function createStars() {
+            for (let i = 0; i < 80; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                const size = Math.random() * 2 + 1;
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.opacity = Math.random() * 0.5 + 0.3;
+                star.style.animationDelay = `${Math.random() * 2}s`;
+                gameContainer.appendChild(star);
+            }
+            
+            for (let i = 0; i < 2; i++) {
+                const shootingStar = document.createElement('div');
+                shootingStar.className = 'shooting-star';
+                shootingStar.style.left = `${Math.random() * 100}%`;
+                shootingStar.style.top = `${Math.random() * 100}%`;
+                shootingStar.style.animationDelay = `${Math.random() * 15}s`;
+                gameContainer.appendChild(shootingStar);
+            }
+        }
+        
+        // 初始化游戏
+function initGame() {
+    rocketX = window.innerWidth / 2;
+    rocketY = window.innerHeight * 0.7;
+    rocketVX = 0;
+    rocketVY = 0;
+    fuel = 100;
+    isDocked = false;
+    gameOver = false;
+    
+    // 获取标题区域高度（大约值，可以根据实际情况调整）
+    const headerHeight = 120; 
+    
+    // 空间站尺寸
+    const stationWidth = 350;
+    const stationHeight = 300;
+    
+    // 计算空间站可放置的区域
+    const minX = 0;
+    const maxX = window.innerWidth - stationWidth;
+    
+    // 调整Y坐标范围，使空间站位于中上方
+    // 页面高度40%的区域（从顶部到页面40%高度）
+    const minY = headerHeight;
+    const maxY = window.innerHeight * 0.4;
+    
+    // 确保空间站不会与火箭初始位置重叠
+    let stationX, stationY;
+    const attempts = 50; // 最大尝试次数
+    let validPosition = false;
+    
+    for (let i = 0; i < attempts && !validPosition; i++) {
+        stationX = Math.random() * (maxX - minX) + minX;
+        stationY = Math.random() * (maxY - minY) + minY;
+        
+        // 检查是否与火箭初始位置保持一定距离
+        const distanceToRocket = Math.sqrt(
+            Math.pow(stationX + stationWidth/2 - rocketX, 2) +
+            Math.pow(stationY + stationHeight/2 - rocketY, 2)
+        );
+        
+        if (distanceToRocket > 300) { // 至少300像素的距离
+            validPosition = true;
+        }
+    }
+    
+    // 如果找不到合适位置，使用默认位置（页面左侧中上方）
+    if (!validPosition) {
+        stationX = window.innerWidth * 0.1;
+        stationY = window.innerHeight * 0.15;
+    }
+    
+    spaceStation.style.left = `${stationX}px`;
+    spaceStation.style.top = `${stationY}px`;
+    
+    // 添加闪烁效果提示空间站位置
+    spaceStation.style.animation = 'pulse 2s 3';
+    setTimeout(() => {
+        spaceStation.style.animation = '';
+    }, 6000);
+    
+    updateRocket();
+    updateFuel();
+    message.style.display = 'none';
+    
+    arrowUp.style.opacity = '0';
+    arrowDown.style.opacity = '0';
+    arrowLeft.style.opacity = '0';
+    arrowRight.style.opacity = '0';
+    
+    const stars = document.querySelectorAll('.star, .shooting-star');
+    stars.forEach(star => star.remove());
+    
+    createStars();
+    
+    rocket.style.filter = 'none';
+    spaceStation.style.filter = 'drop-shadow(0 0 15px rgba(79, 195, 247, 0.7))';
+    
+    gameLoop();
+}
+        
+function updateRocket() {
+    rocket.style.left = `${rocketX}px`;
+    rocket.style.top = `${rocketY}px`;
+    
+    forceIndicator.style.left = `${rocketX + 60}px`;
+    forceIndicator.style.top = `${rocketY}px`;
+    
+    if (!isDocked && !gameOver) {
+        // 火箭圆形端口位置（相对于火箭元素）
+        const rocketPortX = rocketX + 105; // cx="105" 是相对于火箭SVG的210px宽度
+        const rocketPortY = rocketY + 10;  // cy="10" 是相对于火箭SVG的120px高度
+        
+        // 空间站圆形端口位置（相对于空间站元素）
+        const stationRect = spaceStation.getBoundingClientRect();
+        const stationPortX = stationRect.left + 175 * (stationRect.width / 350); // cx="175" 是相对于空间站SVG的350px宽度
+        const stationPortY = stationRect.top + 190 * (stationRect.height / 300); // cy="190" 是相对于空间站SVG的300px高度
+        
+        // 计算两个端口之间的距离
+        const distance = Math.sqrt(
+            Math.pow(stationPortX - rocketPortX, 2) +
+            Math.pow(stationPortY - rocketPortY, 2)
+        );
+        
+        // 当距离小于15像素时判定为对接成功
+        if (distance < 15) {
+            completeMission(true);
+        }
+    }
+}        
+        function updateFuel() {
+            fuelLevel.style.width = `${fuel}%`;
+            fuelDisplay.textContent = Math.floor(fuel);
+            
+            if (fuel < 20) {
+                fuelLevel.style.background = 'linear-gradient(to right, #ff5252, #d32f2f)';
+                fuelLevel.style.boxShadow = '0 0 10px rgba(255, 82, 82, 0.5)';
+            } else {
+                fuelLevel.style.background = 'linear-gradient(to right, #00e676, #00c853)';
+                fuelLevel.style.boxShadow = '0 0 10px rgba(0, 230, 118, 0.5)';
+            }
+            
+            if (fuel <= 0 && !gameOver) {
+                completeMission(false);
+            }
+        }
+        
+        function completeMission(success) {
+            gameOver = true;
+            if (success) {
+                messageTitle.textContent = "对接成功！";
+                messageText.textContent = "你成功完成了空间站对接任务！展示了作用力与反作用力的原理！";
+                isDocked = true;
+                
+                spaceStation.style.filter = 'drop-shadow(0 0 20px #4fc3f7)';
+                rocket.style.filter = 'drop-shadow(0 0 15px #4fc3f7)';
+            } else {
+                messageTitle.textContent = "任务失败";
+                messageText.textContent = "燃料用尽！\n\n记住牛顿第三定律：\n作用力与反作用力大小相等，方向相反。\n\n尝试更精确地控制火箭推进方向。";
+                
+                rocket.style.filter = 'grayscale(80%)';
+            }
+            message.style.display = 'block';
+        }
+        
+        function handleKeyDown(e) {
+            if (gameOver) return;
+            
+            const thrustPower = 0.3;
+            const fuelConsumption = 0.5;
+            
+            if (e.key === 'ArrowUp') {
+                rocketVY += thrustPower;
+                showThrust('top');
+                showForceArrow('up');
+                consumeFuel(fuelConsumption);
+            }
+            else if (e.key === 'ArrowDown') {
+                rocketVY -= thrustPower;
+                showThrust('bottom');
+                showForceArrow('down');
+                consumeFuel(fuelConsumption);
+            }
+            else if (e.key === 'ArrowLeft') {
+                rocketVX += thrustPower;
+                showThrust('left');
+                showForceArrow('left');
+                consumeFuel(fuelConsumption);
+            }
+            else if (e.key === 'ArrowRight') {
+                rocketVX -= thrustPower;
+                showThrust('right');
+                showForceArrow('right');
+                consumeFuel(fuelConsumption);
+            }
+        }
+        
+        function showThrust(direction) {
+            thrust.style.opacity = '0.9';
+            
+            switch(direction) {
+                case 'top':
+                    thrust.style.left = `${rocketX + 68}px`;
+                    thrust.style.top = `${rocketY + 60}px`;
+                    thrust.style.transform = 'rotate(0deg)';
+                    break;
+                case 'bottom':
+                    thrust.style.left = `${rocketX + 80}px`;
+                    thrust.style.top = `${rocketY + 100}px`;
+                    thrust.style.transform = 'rotate(180deg)';
+                    break;
+                case 'left':
+                    thrust.style.left = `${rocketX + 50}px`;
+                    thrust.style.top = `${rocketY + 100}px`;
+                    thrust.style.transform = 'rotate(270deg)';
+                    break;
+                case 'right':
+                    thrust.style.left = `${rocketX + 100}px`;
+                    thrust.style.top = `${rocketY + 90}px`;
+                    thrust.style.transform = 'rotate(90deg)';
+                    break;
+            }
+            
+            setTimeout(() => {
+                thrust.style.opacity = '0';
+            }, 100);
+        }
+        
+        function showForceArrow(direction) {
+            arrowUp.style.opacity = '0';
+            arrowDown.style.opacity = '0';
+            arrowLeft.style.opacity = '0';
+            arrowRight.style.opacity = '0';
+            
+            switch(direction) {
+                case 'up':
+                    arrowUp.style.opacity = '1';
+                    break;
+                case 'down':
+                    arrowDown.style.opacity = '1';
+                    break;
+                case 'left':
+                    arrowLeft.style.opacity = '1';
+                    break;
+                case 'right':
+                    arrowRight.style.opacity = '1';
+                    break;
+            }
+            
+            setTimeout(() => {
+                arrowUp.style.opacity = '0';
+                arrowDown.style.opacity = '0';
+                arrowLeft.style.opacity = '0';
+                arrowRight.style.opacity = '0';
+            }, 500);
+        }
+        
+        function consumeFuel(amount) {
+            fuel = Math.max(0, fuel - amount);
+            updateFuel();
+        }
+        
+        function gameLoop() {
+            if (!gameOver) {
+                rocketX += rocketVX;
+                rocketY += rocketVY;
+                
+                if (rocketX < 0) rocketX = 0;
+                if (rocketX > window.innerWidth - 60) rocketX = window.innerWidth - 60;
+                if (rocketY < 0) rocketY = 0;
+                if (rocketY > window.innerHeight - 120) rocketY = window.innerHeight - 120;
+                
+                rocketVX *= 0.98;
+                rocketVY *= 0.98;
+                
+                if (Math.abs(rocketVX) < 0.01) rocketVX = 0;
+                if (Math.abs(rocketVY) < 0.01) rocketVY = 0;
+                
+                updateRocket();
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function handleResize() {
+            if (!gameOver) {
+                rocketX = Math.min(rocketX, window.innerWidth - 60);
+                rocketY = Math.min(rocketY, window.innerHeight - 120);
+                updateRocket();
+            }
+        }
+        
+        document.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('resize', handleResize);
+        restartBtn.addEventListener('click', initGame);
+    </script>
+</body>
+</html>

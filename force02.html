@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中国宇航员太空模拟</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #ffffff;
+            font-family: 'Arial', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            /* 八边形边框 */
+            padding: 10px;
+            background: #ededed;
+            clip-path: polygon(
+                0 10%, 10% 0, 90% 0, 100% 10%,
+                100% 90%, 90% 100%, 10% 100%, 0 90%
+            );
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            overflow: hidden;
+        }
+        
+        #game-canvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            display: none;
+        }
+        
+        /* 控制面板 */
+        #controls {
+            position: absolute;
+            display: none;
+            background: rgba(255,255,255,0.95);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 25px rgba(0, 100, 255, 0.3);
+            z-index: 100;
+            border: 1px solid rgba(0, 100, 255, 0.3);
+            backdrop-filter: blur(5px);
+        }
+        
+        .control-title {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #0066ff;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            margin: 10px;
+            font-size: 28px;
+            cursor: pointer;
+            background: linear-gradient(145deg, #0066ff, #0044cc);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0, 100, 255, 0.3);
+            transition: all 0.2s;
+        }
+        
+        .control-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 100, 255, 0.4);
+        }
+        
+        /* 介绍对话框 */
+        #intro-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 300;
+            box-shadow: 0 0 35px rgba(0, 100, 255, 0.2);
+            border: 1px solid rgba(0, 100, 255, 0.2);
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        /* 消息弹窗 */
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 200;
+            box-shadow: 0 0 35px rgba(0, 100, 255, 0.2);
+            border: 1px solid rgba(0, 100, 255, 0.2);
+            max-width: 80%;
+            display: none;
+        }
+        
+        #error-message {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 350;
+            box-shadow: 0 0 35px rgba(255, 0, 0, 0.2);
+            border: 1px solid rgba(255, 0, 0, 0.2);
+            max-width: 80%;
+            display: none;
+            color: #ff0000;
+font-size: 15px;
+        }
+        
+        #message h2, #intro-message h2 {
+            color: #0066ff;
+            margin-bottom: 15px;
+        }
+        
+        #message p, #intro-message p {
+            color: #333;
+            margin: 10px 0;
+            text-align: left;
+            line-height: 1.5;
+        }
+        
+        .instruction-title {
+            color: #0066ff;
+            font-weight: bold;
+            margin-top: 15px;
+            text-align: left;
+        }
+        
+        /* 选择题样式 */
+        .question {
+            margin: 15px 0;
+            text-align: left;
+        }
+        
+        .question-text {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .option {
+            display: block;
+            margin: 8px 0;
+            padding: 8px 12px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .option:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .option.selected {
+            background-color: #0066ff;
+            color: white;
+        }
+        
+        /* 按钮样式 */
+        #restart-btn, #start-btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: linear-gradient(145deg, #0066ff, #0044cc);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 4px 15px rgba(0, 100, 255, 0.3);
+            transition: all 0.2s;
+        }
+        
+        #start-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
+        #restart-btn:hover, #start-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 100, 255, 0.4);
+        }
+        
+        /* 浮动动画 */
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        /* 投掷方向指示器 */
+        #throw-indicator {
+            position: absolute;
+            display: none;
+            z-index: 50;
+            pointer-events: none;
+        }
+        
+        #throw-circle {
+            position: absolute;
+            border: 2px dashed #0066ff;
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            transform: translate(-50%, -50%);
+        }
+        
+        #throw-direction {
+            position: absolute;
+            width: 60px;
+            height: 2px;
+            background-color: #0066ff;
+            top: 50%;
+            left: 50%;
+            transform-origin: left center;
+        }
+        
+        /* 手持物品指示 */
+        #held-item {
+            position: absolute;
+            display: none;
+            z-index: 150;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+        }
+        
+        /* 维修标志 */
+        .warning-sign {
+            position: absolute;
+            color: #ff0000;
+            font-size: 20px;
+            font-weight: bold;
+            z-index: 10;
+            animation: pulse 1.5s infinite;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
+            white-space: nowrap;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <!-- 投掷方向指示器 -->
+        <div id="throw-indicator">
+            <div id="throw-circle"></div>
+            <div id="throw-direction"></div>
+        </div>
+        
+        <!-- 手持物品指示 -->
+        <div id="held-item"></div>
+        
+        <!-- 维修标志 -->
+        <div class="warning-sign" id="warning-sign">⚠ 待维修</div>
+        
+        <div id="controls">
+            <div class="control-title">选择用力方向</div>
+            <div style="text-align: center;">
+                <button class="control-btn" data-direction="up">↑</button>
+            </div>
+            <div>
+                <button class="control-btn" data-direction="left">←</button>
+                <button class="control-btn" data-direction="down">↓</button>
+                <button class="control-btn" data-direction="right">→</button>
+            </div>
+        </div>
+        
+        <div id="intro-message">
+            <h2>关卡2：帮助宇航员到达维修点</h2>
+            
+            <div class="instruction-title">游戏说明：</div>
+            <p>在太空失重环境中，宇航员无法像在地面一样行走移动。你需要利用物理原理帮助宇航员到达维修点。</p>
+            
+            <div class="instruction-title">游戏目标：</div>
+            <p>控制宇航员到达屏幕右侧的电脑维修点</p>
+            
+            <div class="instruction-title">物理原理：</div>
+            <p><strong>牛顿第三定律（作用力与反作用力）</strong>：当宇航员使用抓手或投掷物品时，会产生相反方向的推力</p>
+            
+            <div class="instruction-title">请选择正确的操作方法：</div>
+            
+            <div id="error-message">
+                作用力与反作用力是一对大小相等，方向相反的力。
+            </div>
+            
+            <div class="question">
+                <div class="question-text">1. 宇航员想向右运动时，应该______推动抓手。</div>
+                <div class="option" data-correct="false">A. 向上</div>
+                <div class="option" data-correct="false">B. 向下</div>
+                <div class="option" data-correct="true">C. 向左</div>
+                <div class="option" data-correct="false">D. 向右</div>
+            </div>
+            
+            <div class="question">
+                <div class="question-text">2. 宇航员投掷物品时，宇航员会朝着______运动。</div>
+                <div class="option" data-correct="false">A. 同方向</div>
+                <div class="option" data-correct="true">B. 反方向</div>
+            </div>
+            
+            <button id="start-btn" disabled>开始任务</button>
+        </div>
+        
+        <div id="message">
+            <h2 id="message-text">任务成功！</h2>
+            <p>宇航员已安全到达维修点</p>
+            <button id="restart-btn">再次执行</button>
+        </div>
+    </div>
+    
+    <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const controls = document.getElementById('controls');
+        const message = document.getElementById('message');
+        const errorMessage = document.getElementById('error-message');
+        const messageText = document.getElementById('message-text');
+        const restartBtn = document.getElementById('restart-btn');
+        const introMessage = document.getElementById('intro-message');
+        const startBtn = document.getElementById('start-btn');
+        const throwIndicator = document.getElementById('throw-indicator');
+        const throwCircle = document.getElementById('throw-circle');
+        const throwDirection = document.getElementById('throw-direction');
+        const heldItem = document.getElementById('held-item');
+        const warningSign = document.getElementById('warning-sign');
+        
+        // 设置画布尺寸
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        // 游戏对象
+        const game = {
+            astronaut: { x: 100, y: canvas.height/2, width: 60, height: 120 },
+            grabHandles: [],
+            obstacles: [],
+            computer: { x: canvas.width - 120, y: canvas.height - 120, width: 100, height: 120 },
+            instruments: [], // 新增仪器数组
+            velocityX: 0,
+            velocityY: 0,
+            friction: 0.98,
+            activeHandle: null,
+            gameActive: false,
+            initialFloating: false,
+            INITIAL_SPEED: 0.5,
+            PUSH_SPEED: 3,
+            pushDistance: 0,
+            MAX_PUSH_DISTANCE: 200,
+            OBSTACLE_PUSH_FORCE: 2,
+            heldObstacle: null,
+            throwAngle: 0,
+            isThrowing: false,
+            isHolding: false,
+            hoveredHandle: null,
+            targetHandle: null
+        };
+        
+        // 障碍物类型
+        const OBSTACLE_TYPES = {
+            PEN: 'pen',
+            GLASS: 'glass',
+            NOTEBOOK: 'notebook'
+        };
+        
+        // 仪器类型
+        const INSTRUMENT_TYPES = {
+            PANEL: 'panel',
+            SCREEN: 'screen',
+            BUTTONS: 'buttons'
+        };
+        
+        // 初始化抓手位置 - 每排5个
+        function initGrabHandles() {
+            game.grabHandles = [];
+            
+            // 第一排抓手 (5个)
+            for (let i = 0; i < 5; i++) {
+                game.grabHandles.push({
+                    x: canvas.width * 0.1 + i * canvas.width * 0.2,
+                    y: canvas.height * 0.25,
+                    width: 100,
+                    height: 120,
+                    canGrab: false,
+                    isGlowing: false,
+                    glowIntensity: 0,
+                    scale: 1,
+                    isHovered: false,
+                    isActive: false
+                });
+            }
+            
+            // 第二排抓手 (5个)
+            for (let i = 0; i < 5; i++) {
+                game.grabHandles.push({
+                    x: canvas.width * 0.1 + i * canvas.width * 0.2,
+                    y: canvas.height * 0.65,
+                    width: 100,
+                    height: 120,
+                    canGrab: false,
+                    isGlowing: false,
+                    glowIntensity: 0,
+                    scale: 1,
+                    isHovered: false,
+                    isActive: false
+                });
+            }
+        }
+        
+        // 初始化障碍物
+        function initObstacles() {
+            game.obstacles = [];
+            
+            // 在中间区域添加障碍物
+            const centerY = canvas.height * 0.45;
+            const spacing = canvas.width / 4;
+            
+            // 笔 - 第一个位置
+            game.obstacles.push({
+                x: spacing * 1,
+                y: centerY,
+                type: OBSTACLE_TYPES.PEN,
+                width: 40,
+                height: 10,
+                rotation: 0,
+                floatingSpeed: 0.5 + Math.random() * 0.5,
+                floatingRange: 20 + Math.random() * 30,
+                canClick: false,
+                isGlowing: false,
+                glowIntensity: 0,
+                scale: 1,
+                originalWidth: 40,
+                originalHeight: 10
+            });
+            
+            // 玻璃杯 - 第二个位置
+            game.obstacles.push({
+                x: spacing * 2,
+                y: centerY,
+                type: OBSTACLE_TYPES.GLASS,
+                width: 40,
+                height: 50,
+                rotation: 0,
+                floatingSpeed: 0.3 + Math.random() * 0.5,
+                floatingRange: 15 + Math.random() * 25,
+                canClick: false,
+                isGlowing: false,
+                glowIntensity: 0,
+                scale: 1,
+                originalWidth: 40,
+                originalHeight: 50,
+                waterLevel: 0.7
+            });
+            
+            // 本子 - 第三个位置
+            game.obstacles.push({
+                x: spacing * 3,
+                y: centerY,
+                type: OBSTACLE_TYPES.NOTEBOOK,
+                width: 50,
+                height: 60,
+                rotation: 0,
+                floatingSpeed: 0.2 + Math.random() * 0.5,
+                floatingRange: 10 + Math.random() * 20,
+                canClick: false,
+                isGlowing: false,
+                glowIntensity: 0,
+                scale: 1,
+                originalWidth: 50,
+                originalHeight: 60
+            });
+        }
+        
+        // 初始化仪器
+        function initInstruments() {
+            game.instruments = [];
+            
+            // 顶部仪器
+            for (let i = 0; i < 3; i++) {
+                game.instruments.push({
+                    x: canvas.width * 0.2 + i * canvas.width * 0.3,
+                    y: 30,
+                    width: 80,
+                    height: 60,
+                    type: INSTRUMENT_TYPES.PANEL
+                });
+            }
+            
+            // 底部仪器
+            for (let i = 0; i < 3; i++) {
+                game.instruments.push({
+                    x: canvas.width * 0.2 + i * canvas.width * 0.3,
+                    y: canvas.height - 30,
+                    width: 80,
+                    height: 60,
+                    type: INSTRUMENT_TYPES.PANEL
+                });
+            }
+        }
+        
+        // 绘制简化版宇航员
+        function drawAstronaut(x, y, scale = 1, rotation = 0) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rotation * Math.PI / 180);
+            ctx.scale(scale, scale);
+
+            // 头部 - 科技感设计
+            ctx.beginPath();
+            ctx.arc(0, -40, 30, 0, Math.PI * 2);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fill();
+            ctx.strokeStyle = '#0066ff';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // 面罩 - 蓝色透明效果
+            ctx.beginPath();
+            ctx.arc(0, -40, 25, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 150, 255, 0.2)';
+            ctx.fill();
+
+            // 身体 - 科技感设计
+            ctx.beginPath();
+            ctx.moveTo(-30, -10);
+            ctx.bezierCurveTo(-35, 30, -20, 70, 0, 70);
+            ctx.bezierCurveTo(20, 70, 35, 30, 30, -10);
+            ctx.closePath();
+            ctx.fillStyle = '#0066ff';
+            ctx.fill();
+            ctx.strokeStyle = '#0044cc';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // 左臂
+            ctx.beginPath();
+            ctx.ellipse(-35, 20, 15, 30, 10 * Math.PI / 180, 0, Math.PI * 2);
+            ctx.fillStyle = '#0066ff';
+            ctx.fill();
+            ctx.strokeStyle = '#0044cc';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 右臂
+            ctx.beginPath();
+            ctx.ellipse(35, 20, 15, 30, -15 * Math.PI / 180, 0, Math.PI * 2);
+            ctx.fillStyle = '#0066ff';
+            ctx.fill();
+            ctx.strokeStyle = '#0044cc';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 左手
+            ctx.beginPath();
+            ctx.arc(-45, 50, 12, 0, Math.PI * 2);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fill();
+            ctx.strokeStyle = '#0044cc';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 右手
+            ctx.beginPath();
+            ctx.arc(45, 50, 12, 0, Math.PI * 2);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fill();
+            ctx.strokeStyle = '#0044cc';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 左腿
+            ctx.beginPath();
+            ctx.ellipse(-18, 80, 15, 35, -5 * Math.PI / 180, 0, Math.PI * 2);
+            ctx.fillStyle = '#0066ff';
+            ctx.fill();
+            ctx.strokeStyle = '#0044cc';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 右腿
+            ctx.beginPath();
+            ctx.ellipse(18, 80, 15, 35, 5 * Math.PI / 180, 0, Math.PI * 2);
+            ctx.fillStyle = '#0066ff';
+            ctx.fill();
+            ctx.strokeStyle = '#0044cc';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 左脚
+            ctx.beginPath();
+            ctx.ellipse(-18, 115, 15, 12, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fill();
+            ctx.strokeStyle = '#0044cc';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 右脚
+            ctx.beginPath();
+            ctx.ellipse(18, 115, 15, 12, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fill();
+            ctx.strokeStyle = '#0044cc';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 国旗标志
+            ctx.beginPath();
+            ctx.rect(5, -5, 20, 15);
+            ctx.fillStyle = '#EE1C25';
+            ctx.fill();
+            
+            // 五角星
+            drawStar(10, 0, 3, 5, '#FFD700');
+            drawStar(15, -2, 1, 5, '#FFD700');
+            drawStar(18, 0, 1, 5, '#FFD700');
+            drawStar(18, 3, 1, 5, '#FFD700');
+            drawStar(15, 4, 1, 5, '#FFD700');
+            
+            // 绘制宇航员中心点 (黑色)
+            //ctx.beginPath();
+            //ctx.arc(0, 0, 3, 0, Math.PI * 2);
+            //ctx.fillStyle = '#000000';
+           // ctx.fill();
+            
+            ctx.restore();
+        }
+        
+        // 绘制五角星
+        function drawStar(x, y, radius, spikes, color) {
+            let rot = Math.PI/2 * 3;
+            let xPos = x;
+            let yPos = y;
+            let step = Math.PI / spikes;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y - radius);
+            
+            for(let i = 0; i < spikes; i++) {
+                xPos = x + Math.cos(rot) * radius;
+                yPos = y + Math.sin(rot) * radius;
+                ctx.lineTo(xPos, yPos);
+                rot += step;
+
+                xPos = x + Math.cos(rot) * (radius * 0.4);
+                yPos = y + Math.sin(rot) * (radius * 0.4);
+                ctx.lineTo(xPos, yPos);
+                rot += step;
+            }
+            
+            ctx.lineTo(x, y - radius);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+        
+        // 绘制科技感抓手 - 改为黑色
+        function drawGrabHandle(x, y, width, height, scale = 1, isGlowing = false, glowIntensity = 0, isHovered = false) {
+            ctx.save();
+            ctx.translate(x, y);
+            
+            // 悬停状态放大效果
+            const hoverScale = isHovered ? 1.2 : 1;
+            ctx.scale(scale * hoverScale, scale * hoverScale);
+            
+            // 绘制发光效果 - 改为黑色发光
+            if (isGlowing) {
+                ctx.shadowColor = '#000000';
+                ctx.shadowBlur = 10 + glowIntensity * 10;
+            }
+            
+            // 顶部固定点 - 改为黑色
+            ctx.beginPath();
+            ctx.arc(0, -height/2, 10, 0, Math.PI * 2);
+            ctx.fillStyle = '#000000';
+            ctx.fill();
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // 绳子主体 - 改为黑色
+            ctx.beginPath();
+            ctx.moveTo(0, -height/2 + 10);
+            
+            const curveHeight = height * 0.6;
+            const curveWidth = width * 0.8;
+            
+            ctx.bezierCurveTo(
+                curveWidth/2, -height/2 + curveHeight/3,
+                curveWidth/2, -height/2 + curveHeight*2/3,
+                0, -height/2 + curveHeight
+            );
+            
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#000000';
+            ctx.stroke();
+            
+            // 底部把手 - 改为黑色
+            ctx.beginPath();
+            ctx.arc(0, -height/2 + curveHeight, 10, 0, Math.PI * 2);
+            ctx.fillStyle = '#000000';
+            ctx.fill();
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // 绘制抓手中心点 (红色)
+            //ctx.beginPath();
+            //ctx.arc(0, -height/2 + curveHeight/2, 3, 0, Math.PI * 2);
+            //ctx.fillStyle = '#FF0000';
+            //ctx.fill();
+            
+            // 重置阴影
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            
+            ctx.restore();
+        }
+        
+        // 绘制科技感电脑设备(维修点) - 简化版
+        function drawComputer(x, y, width, height) {
+            ctx.save();
+            ctx.translate(x, y);
+            
+            // 显示器底座
+            ctx.fillStyle = '#333333';
+            ctx.fillRect(-width/4, height/2 - 10, width/2, 10);
+            
+            // 显示器支架
+            ctx.fillStyle = '#555555';
+            ctx.fillRect(-10, -height/2 + 30, 20, height - 40);
+            
+            // 显示器主体 - 改为浅米色 #F2ECDE
+            ctx.beginPath();
+            ctx.roundRect(-width/2, -height/2, width, height * 0.7, 10);
+            const gradient = ctx.createLinearGradient(0, -height/2, 0, height/2 * 0.7);
+            gradient.addColorStop(0, '#F2ECDE');
+            gradient.addColorStop(1, '#E0DACB');
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // 屏幕
+            ctx.beginPath();
+            ctx.roundRect(-width/2 + 15, -height/2 + 15, width - 30, height * 0.7 - 30, 5);
+            ctx.fillStyle = 'rgba(0, 150, 255, 0.2)';
+            ctx.fill();
+            
+            // 键盘
+            ctx.fillStyle = '#222222';
+            ctx.fillRect(-width/2 + 10, height/2 - 40, width - 20, 20);
+            
+            // 键盘按键
+            ctx.fillStyle = '#444444';
+            for(let i = 0; i < 5; i++) {
+                ctx.fillRect(-width/2 + 15 + i * 15, height/2 - 35, 10, 10);
+            }
+            
+            // 绘制维修点中心点 (黑色)
+            //ctx.beginPath();
+            //ctx.arc(0, 0, 3, 0, Math.PI * 2);
+            //ctx.fillStyle = '#000000';
+            //ctx.fill();
+            
+            ctx.restore();
+        }
+        
+        // 绘制仪器
+        function drawInstruments() {
+            game.instruments.forEach(instrument => {
+                ctx.save();
+                ctx.translate(instrument.x, instrument.y);
+                
+                // 根据仪器类型绘制不同样式
+                switch(instrument.type) {
+                    case INSTRUMENT_TYPES.PANEL:
+                        // 控制面板
+                        ctx.fillStyle = '#333333';
+                        ctx.beginPath();
+                        ctx.roundRect(-instrument.width/2, -instrument.height/2, instrument.width, instrument.height, 5);
+                        ctx.fill();
+                        
+                        // 面板细节
+                        ctx.strokeStyle = '#555555';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        
+                        // 按钮
+                        ctx.fillStyle = '#0066ff';
+                        for(let i = 0; i < 3; i++) {
+                            ctx.beginPath();
+                            ctx.arc(-instrument.width/2 + 15 + i * 20, -5, 5, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        
+                        // 屏幕
+                        ctx.fillStyle = 'rgba(0, 100, 255, 0.2)';
+                        ctx.fillRect(instrument.width/2 - 30, -instrument.height/2 + 10, 25, 20);
+                        break;
+                }
+                
+                ctx.restore();
+            });
+        }
+        
+        // 绘制障碍物
+        function drawObstacles() {
+            const time = Date.now();
+            
+            game.obstacles.forEach(obstacle => {
+                // 跳过被持有的障碍物
+                if (game.heldObstacle === obstacle) return;
+                
+                ctx.save();
+                
+                // 计算漂浮位置
+                const floatingOffset = Math.sin(time * 0.001 * obstacle.floatingSpeed) * obstacle.floatingRange;
+                
+                ctx.translate(obstacle.x, obstacle.y + floatingOffset);
+                ctx.rotate(obstacle.rotation * Math.PI / 180);
+                ctx.scale(obstacle.scale, obstacle.scale);
+                
+                // 绘制发光效果
+                if (obstacle.isGlowing) {
+                    ctx.shadowColor = '#0066ff';
+                    ctx.shadowBlur = 10 + obstacle.glowIntensity * 10;
+                }
+                
+                switch(obstacle.type) {
+                    case OBSTACLE_TYPES.PEN:
+                        // 绘制笔
+                        ctx.fillStyle = '#0066ff';
+                        ctx.fillRect(-obstacle.originalWidth/2, -obstacle.originalHeight/2, obstacle.originalWidth, obstacle.originalHeight);
+                        
+                        // 笔尖
+                        ctx.beginPath();
+                        ctx.moveTo(obstacle.originalWidth/2, -obstacle.originalHeight/2);
+                        ctx.lineTo(obstacle.originalWidth/2 + 10, 0);
+                        ctx.lineTo(obstacle.originalWidth/2, obstacle.originalHeight/2);
+                        ctx.fillStyle = '#FF0000';
+                        ctx.fill();
+                        break;
+                        
+                    case OBSTACLE_TYPES.GLASS:
+                        // 绘制玻璃杯 - 新设计
+                        // 杯体
+                        ctx.fillStyle = 'rgba(200, 240, 255, 0.3)';
+                        ctx.beginPath();
+                        ctx.moveTo(-obstacle.originalWidth/2, -obstacle.originalHeight/2 + 10);
+                        ctx.lineTo(-obstacle.originalWidth/2 + 5, -obstacle.originalHeight/2);
+                        ctx.lineTo(obstacle.originalWidth/2 - 5, -obstacle.originalHeight/2);
+                        ctx.lineTo(obstacle.originalWidth/2, -obstacle.originalHeight/2 + 10);
+                        ctx.lineTo(obstacle.originalWidth/2, obstacle.originalHeight/2 - 5);
+                        ctx.lineTo(obstacle.originalWidth/2 - 5, obstacle.originalHeight/2);
+                        ctx.lineTo(-obstacle.originalWidth/2 + 5, obstacle.originalHeight/2);
+                        ctx.lineTo(-obstacle.originalWidth/2, obstacle.originalHeight/2 - 5);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // 杯体边框
+                        ctx.strokeStyle = '#0066ff';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        
+                        // 水
+                        const waterHeight = obstacle.originalHeight * obstacle.waterLevel;
+                        ctx.fillStyle = 'rgba(0, 150, 255, 0.5)';
+                        ctx.beginPath();
+                        ctx.moveTo(-obstacle.originalWidth/2 + 5, obstacle.originalHeight/2 - waterHeight);
+                        ctx.lineTo(obstacle.originalWidth/2 - 5, obstacle.originalHeight/2 - waterHeight);
+                        ctx.lineTo(obstacle.originalWidth/2 - 5, obstacle.originalHeight/2 - 5);
+                        ctx.lineTo(-obstacle.originalWidth/2 + 5, obstacle.originalHeight/2 - 5);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // 水面效果
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(-obstacle.originalWidth/2 + 5, obstacle.originalHeight/2 - waterHeight);
+                        ctx.lineTo(obstacle.originalWidth/2 - 5, obstacle.originalHeight/2 - waterHeight);
+                        ctx.stroke();
+                        
+                        // 杯底
+                        ctx.strokeStyle = '#0066ff';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(-obstacle.originalWidth/2 + 5, obstacle.originalHeight/2);
+                        ctx.lineTo(obstacle.originalWidth/2 - 5, obstacle.originalHeight/2);
+                        ctx.stroke();
+                        break;
+                        
+                    case OBSTACLE_TYPES.NOTEBOOK:
+                        // 绘制笔记本
+                        // 封面
+                        ctx.fillStyle = '#0066ff';
+                        ctx.beginPath();
+                        ctx.roundRect(-obstacle.originalWidth/2, -obstacle.originalHeight/2, obstacle.originalWidth, obstacle.originalHeight, 5);
+                        ctx.fill();
+                        
+                        // 书脊
+                        ctx.fillStyle = '#0044cc';
+                        ctx.fillRect(-obstacle.originalWidth/2, -obstacle.originalHeight/2, 5, obstacle.originalHeight);
+                        
+                        // 标题
+                        ctx.fillStyle = 'white';
+                        ctx.font = 'bold 10px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('工作日志', 0, -obstacle.originalHeight/2 + 15);
+                        
+                        // 中国航天标志
+                        ctx.font = 'bold 8px Arial';
+                        ctx.fillText('中国航天', 0, -obstacle.originalHeight/2 + 30);
+                        
+                        // 页边
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                        ctx.lineWidth = 1;
+                        for(let i = 1; i < 5; i++) {
+                            ctx.beginPath();
+                            ctx.moveTo(-obstacle.originalWidth/2 + 10, -obstacle.originalHeight/2 + 40 + i * 5);
+                            ctx.lineTo(obstacle.originalWidth/2 - 10, -obstacle.originalHeight/2 + 40 + i * 5);
+                            ctx.stroke();
+                        }
+                        break;
+                }
+                
+                // 绘制障碍物中心点 (黑色)
+                //ctx.beginPath();
+                //ctx.arc(0, 0, 3, 0, Math.PI * 2);
+                //ctx.fillStyle = '#000000';
+                //ctx.fill();
+                
+                // 重置阴影
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+                
+                ctx.restore();
+            });
+        }
+        
+        // 绘制手持物品
+        function drawHeldItem() {
+            if (!game.heldObstacle) return;
+            
+            // 计算宇航员右手位置
+            const astronautRightHandX = game.astronaut.x + 45;
+            const astronautRightHandY = game.astronaut.y + 50;
+            
+            // 创建手持物品的canvas
+            const itemCanvas = document.createElement('canvas');
+            const itemCtx = itemCanvas.getContext('2d');
+            
+            // 设置canvas大小
+            const scale = 0.5;
+            itemCanvas.width = game.heldObstacle.originalWidth * 2;
+            itemCanvas.height = game.heldObstacle.originalHeight * 2;
+            
+            // 绘制手持物品
+            itemCtx.save();
+            itemCtx.translate(itemCanvas.width/2, itemCanvas.height/2);
+            
+            switch(game.heldObstacle.type) {
+                case OBSTACLE_TYPES.PEN:
+                    // 绘制笔
+                    itemCtx.fillStyle = '#0066ff';
+                    itemCtx.fillRect(-game.heldObstacle.originalWidth/2, -game.heldObstacle.originalHeight/2, 
+                                    game.heldObstacle.originalWidth, game.heldObstacle.originalHeight);
+                    
+                    // 笔尖
+                    itemCtx.beginPath();
+                    itemCtx.moveTo(game.heldObstacle.originalWidth/2, -game.heldObstacle.originalHeight/2);
+                    itemCtx.lineTo(game.heldObstacle.originalWidth/2 + 10, 0);
+                    itemCtx.lineTo(game.heldObstacle.originalWidth/2, game.heldObstacle.originalHeight/2);
+                    itemCtx.fillStyle = '#FF0000';
+                    itemCtx.fill();
+                    break;
+                    
+                case OBSTACLE_TYPES.GLASS:
+                    // 绘制玻璃杯 - 新设计
+                    // 杯体
+                    itemCtx.fillStyle = 'rgba(200, 240, 255, 0.3)';
+                    itemCtx.beginPath();
+                    itemCtx.moveTo(-game.heldObstacle.originalWidth/2, -game.heldObstacle.originalHeight/2 + 10);
+                    itemCtx.lineTo(-game.heldObstacle.originalWidth/2 + 5, -game.heldObstacle.originalHeight/2);
+                    itemCtx.lineTo(game.heldObstacle.originalWidth/2 - 5, -game.heldObstacle.originalHeight/2);
+                    itemCtx.lineTo(game.heldObstacle.originalWidth/2, -game.heldObstacle.originalHeight/2 + 10);
+                    itemCtx.lineTo(game.heldObstacle.originalWidth/2, game.heldObstacle.originalHeight/2 - 5);
+                    itemCtx.lineTo(game.heldObstacle.originalWidth/2 - 5, game.heldObstacle.originalHeight/2);
+                    itemCtx.lineTo(-game.heldObstacle.originalWidth/2 + 5, game.heldObstacle.originalHeight/2);
+                    itemCtx.lineTo(-game.heldObstacle.originalWidth/2, game.heldObstacle.originalHeight/2 - 5);
+                    itemCtx.closePath();
+                    itemCtx.fill();
+                    
+                    // 杯体边框
+                    itemCtx.strokeStyle = '#0066ff';
+                    itemCtx.lineWidth = 2;
+                    itemCtx.stroke();
+                    
+                    // 水
+                    const waterHeight = game.heldObstacle.originalHeight * game.heldObstacle.waterLevel;
+                    itemCtx.fillStyle = 'rgba(0, 150, 255, 0.5)';
+                    itemCtx.beginPath();
+                    itemCtx.moveTo(-game.heldObstacle.originalWidth/2 + 5, game.heldObstacle.originalHeight/2 - waterHeight);
+                    itemCtx.lineTo(game.heldObstacle.originalWidth/2 - 5, game.heldObstacle.originalHeight/2 - waterHeight);
+                    itemCtx.lineTo(game.heldObstacle.originalWidth/2 - 5, game.heldObstacle.originalHeight/2 - 5);
+                    itemCtx.lineTo(-game.heldObstacle.originalWidth/2 + 5, game.heldObstacle.originalHeight/2 - 5);
+                    itemCtx.closePath();
+                    itemCtx.fill();
+                    
+                    // 水面效果
+                    itemCtx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                    itemCtx.lineWidth = 1;
+                    itemCtx.beginPath();
+                    itemCtx.moveTo(-game.heldObstacle.originalWidth/2 + 5, game.heldObstacle.originalHeight/2 - waterHeight);
+                    itemCtx.lineTo(game.heldObstacle.originalWidth/2 - 5, game.heldObstacle.originalHeight/2 - waterHeight);
+                    itemCtx.stroke();
+                    
+                    // 杯底
+                    itemCtx.strokeStyle = '#0066ff';
+                    itemCtx.lineWidth = 2;
+                    itemCtx.beginPath();
+                    itemCtx.moveTo(-game.heldObstacle.originalWidth/2 + 5, game.heldObstacle.originalHeight/2);
+                    itemCtx.lineTo(game.heldObstacle.originalWidth/2 - 5, game.heldObstacle.originalHeight/2);
+                    itemCtx.stroke();
+                    break;
+                    
+                case OBSTACLE_TYPES.NOTEBOOK:
+                    // 绘制笔记本
+                    // 封面
+                    itemCtx.fillStyle = '#0066ff';
+                    itemCtx.beginPath();
+                    itemCtx.roundRect(-game.heldObstacle.originalWidth/2, -game.heldObstacle.originalHeight/2, 
+                                    game.heldObstacle.originalWidth, game.heldObstacle.originalHeight, 5);
+                    itemCtx.fill();
+                    
+                    // 书脊
+                    itemCtx.fillStyle = '#0044cc';
+                    itemCtx.fillRect(-game.heldObstacle.originalWidth/2, -game.heldObstacle.originalHeight/2, 
+                                   5, game.heldObstacle.originalHeight);
+                    
+                    // 标题
+                    itemCtx.fillStyle = 'white';
+                    itemCtx.font = 'bold 10px Arial';
+                    itemCtx.textAlign = 'center';
+                    itemCtx.fillText('工作日志', 0, -game.heldObstacle.originalHeight/2 + 15);
+                    
+                    // 中国航天标志
+                    itemCtx.font = 'bold 8px Arial';
+                    itemCtx.fillText('中国航天', 0, -game.heldObstacle.originalHeight/2 + 30);
+                    
+                    // 页边
+                    itemCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                    itemCtx.lineWidth = 1;
+                    for(let i = 1; i < 5; i++) {
+                        itemCtx.beginPath();
+                        itemCtx.moveTo(-game.heldObstacle.originalWidth/2 + 10, -game.heldObstacle.originalHeight/2 + 40 + i * 5);
+                        itemCtx.lineTo(game.heldObstacle.originalWidth/2 - 10, -game.heldObstacle.originalHeight/2 + 40 + i * 5);
+                        itemCtx.stroke();
+                    }
+                    break;
+            }
+            
+            itemCtx.restore();
+            
+            // 更新手持物品显示
+            heldItem.innerHTML = '';
+            heldItem.appendChild(itemCanvas);
+            heldItem.style.left = astronautRightHandX + 'px';
+            heldItem.style.top = astronautRightHandY + 'px';
+            heldItem.style.display = 'block';
+        }
+        
+        // 绘制游戏场景
+        function drawGame() {
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制白色背景
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制微妙的网格背景
+            ctx.strokeStyle = 'rgba(0, 100, 255, 0.05)';
+            ctx.lineWidth = 1;
+            
+            // 水平线
+            for(let y = 0; y < canvas.height; y += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            
+            // 垂直线
+            for(let x = 0; x < canvas.width; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            // 绘制仪器
+            drawInstruments();
+            
+            // 绘制抓手
+            game.grabHandles.forEach(handle => {
+                drawGrabHandle(handle.x, handle.y, handle.width, handle.height, handle.scale, 
+                              handle.isGlowing, handle.glowIntensity, handle.isHovered);
+            });
+            
+            // 绘制障碍物
+            drawObstacles();
+            
+            // 绘制电脑设备(维修点)
+            drawComputer(game.computer.x, game.computer.y, game.computer.width, game.computer.height);
+            
+            // 绘制宇航员 - 比例改为1
+            drawAstronaut(game.astronaut.x, game.astronaut.y, 1);
+            
+            // 绘制手持物品
+            drawHeldItem();
+        }
+        
+        // 检查与仪器的碰撞
+        function checkInstrumentCollision() {
+            game.instruments.forEach(instrument => {
+                // 检查宇航员是否与仪器碰撞
+                if (
+                    game.astronaut.x + game.astronaut.width/2 > instrument.x - instrument.width/2 &&
+                    game.astronaut.x - game.astronaut.width/2 < instrument.x + instrument.width/2 &&
+                    game.astronaut.y + game.astronaut.height/2 > instrument.y - instrument.height/2 &&
+                    game.astronaut.y - game.astronaut.height/2 < instrument.y + instrument.height/2
+                ) {
+                    // 计算碰撞方向
+                    const dx = game.astronaut.x - instrument.x;
+                    const dy = game.astronaut.y - instrument.y;
+                    
+                    // 根据碰撞方向反弹
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        // 水平方向碰撞
+                        game.velocityX = -game.velocityX * 0.7;
+                    } else {
+                        // 垂直方向碰撞
+                        game.velocityY = -game.velocityY * 0.7;
+                    }
+                }
+            });
+        }
+        
+        // 初始化游戏
+        function initGame() {
+            initGrabHandles();
+            initObstacles();
+            initInstruments(); // 初始化仪器
+            
+            const firstRowLeftHandle = game.grabHandles[0];
+            const secondRowLeftHandle = game.grabHandles[5]; // 第二排第一个抓手
+            
+            // 随机选择一个初始抓手
+            game.targetHandle = Math.random() > 0.5 ? firstRowLeftHandle : secondRowLeftHandle;
+            game.targetHandle.isGlowing = true;
+            game.targetHandle.glowIntensity = 5;
+            
+            game.astronaut.x = 100;
+            game.astronaut.y = canvas.height / 2;
+            
+            const dx = game.targetHandle.x - game.astronaut.x;
+            const dy = game.targetHandle.y - game.astronaut.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            game.velocityX = (dx / distance) * game.INITIAL_SPEED;
+            game.velocityY = (dy / distance) * game.INITIAL_SPEED;
+            
+            game.gameActive = true;
+            game.initialFloating = true;
+            game.pushDistance = 0;
+            game.heldObstacle = null;
+            game.isThrowing = false;
+            game.isHolding = false;
+            game.hoveredHandle = null;
+            
+            controls.style.display = 'none';
+            message.style.display = 'none';
+            throwIndicator.style.display = 'none';
+            heldItem.style.display = 'none';
+            
+            // 设置维修标志位置
+            warningSign.style.left = (game.computer.x - 70) + 'px';
+            warningSign.style.top = (game.computer.y - 120) + 'px';
+            warningSign.style.display = 'block';
+            
+            // 显示游戏元素
+            canvas.style.display = 'block';
+            
+            updateGame();
+        }
+        
+        // 触发抓手
+        function triggerHandle(handle) {
+            if (!game.gameActive || game.isHolding) return;
+            
+            game.activeHandle = handle;
+            handle.isActive = true;
+            
+            // 抓手发光效果
+            handle.isGlowing = true;
+            handle.glowIntensity = 5;
+            
+            // 显示控制面板
+            setTimeout(() => {
+                if (game.gameActive && game.activeHandle === handle) {
+                    // 如果是右侧的两个抓手，将控制面板放在左侧
+                    const isRightHandle = handle.x > canvas.width * 0.7;
+                    const panelX = isRightHandle ? handle.x - 150 : handle.x - 50;
+                    
+                    controls.style.left = panelX + 'px';
+                    controls.style.top = (handle.y - 100) + 'px';
+                    controls.style.display = 'block';
+                }
+            }, 300);
+            
+            // 停止初始漂浮状态
+            game.initialFloating = false;
+        }
+        
+        // 检查宇航员是否靠近任何抓手
+        function checkHandleProximity() {
+            if (!game.gameActive || game.initialFloating || game.isHolding) return;
+            
+            let closestHandle = null;
+            let minDistance = Infinity;
+            
+            // 重置所有抓手状态
+            game.grabHandles.forEach(handle => {
+                handle.canGrab = false;
+                handle.isGlowing = false;
+                handle.scale = 1;
+                handle.isHovered = false;
+            });
+            
+            // 找出最近的抓手
+            game.grabHandles.forEach(handle => {
+                const distance = Math.sqrt(
+                    Math.pow(handle.x - game.astronaut.x, 2) +
+                    Math.pow(handle.y - game.astronaut.y, 2)
+                );
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestHandle = handle;
+                }
+            });
+            
+            // 如果距离<150且没有正在激活的抓手
+            if (minDistance < 150 && !game.activeHandle) {
+                closestHandle.canGrab = true;
+                closestHandle.isGlowing = true;
+                // 脉冲发光效果
+                closestHandle.glowIntensity = Math.abs(Math.sin(Date.now() * 0.005)) * 5;
+                
+                // 如果鼠标悬停在抓手上，添加悬停效果
+                if (game.hoveredHandle === closestHandle) {
+                    closestHandle.isHovered = true;
+                }
+            }
+        }
+        
+        // 检查宇航员是否靠近任何障碍物
+        function checkObstacleProximity() {
+            if (!game.gameActive || game.initialFloating || game.isHolding) return;
+            
+            game.obstacles.forEach(obstacle => {
+                const distance = Math.sqrt(
+                    Math.pow(obstacle.x - game.astronaut.x, 2) +
+                    Math.pow(obstacle.y - game.astronaut.y, 2)
+                );
+                
+                // 如果距离足够近，可以点击 (180)
+                if (distance < 180) {
+                    obstacle.canClick = true;
+                    obstacle.isGlowing = true;
+                    // 脉冲发光和放大效果
+                    obstacle.glowIntensity = Math.abs(Math.sin(Date.now() * 0.005)) * 5;
+                    obstacle.scale = 1 + Math.abs(Math.sin(Date.now() * 0.005)) * 0.1;
+                } else {
+                    obstacle.canClick = false;
+                    obstacle.isGlowing = false;
+                    obstacle.scale = 1;
+                }
+            });
+        }
+        
+        // 抓取障碍物
+        function grabObstacle(obstacle) {
+            if (!game.gameActive || !obstacle.canClick || game.isHolding) return;
+            
+            game.heldObstacle = obstacle;
+            game.isHolding = true;
+            
+            // 隐藏控制面板
+            controls.style.display = 'none';
+            game.activeHandle = null;
+            
+            // 准备投掷
+            setTimeout(() => {
+                if (game.gameActive && game.isHolding) {
+                    game.isThrowing = true;
+                    
+                    // 显示投掷方向指示器
+                    throwIndicator.style.left = game.astronaut.x + 'px';
+                    throwIndicator.style.top = game.astronaut.y + 'px';
+                    throwIndicator.style.display = 'block';
+                }
+            }, 500);
+        }
+        
+        // 投掷障碍物
+        function throwObstacle() {
+            if (!game.heldObstacle || !game.isThrowing) return;
+            
+            // 计算投掷方向
+            const throwX = Math.cos(game.throwAngle);
+            const throwY = Math.sin(game.throwAngle);
+            
+            // 给障碍物施加力
+            game.heldObstacle.x = game.astronaut.x + throwX * 50;
+            game.heldObstacle.y = game.astronaut.y + throwY * 50;
+            game.heldObstacle.velocityX = throwX * 5;
+            game.heldObstacle.velocityY = throwY * 5;
+            
+            // 给宇航员施加反作用力
+            game.velocityX = -throwX * game.OBSTACLE_PUSH_FORCE;
+            game.velocityY = -throwY * game.OBSTACLE_PUSH_FORCE;
+            
+            // 设置推动距离
+            game.pushDistance = game.MAX_PUSH_DISTANCE;
+            
+            // 添加一些随机性
+            game.velocityX += (Math.random() - 0.5) * 0.5;
+            game.velocityY += (Math.random() - 0.5) * 0.5;
+            
+            // 重置状态
+            game.heldObstacle = null;
+            game.isThrowing = false;
+            game.isHolding = false;
+            throwIndicator.style.display = 'none';
+            heldItem.style.display = 'none';
+        }
+        
+        // 更新投掷方向指示器
+        function updateThrowIndicator(mouseX, mouseY) {
+            if (!game.isThrowing || !game.heldObstacle) return;
+            
+            // 计算角度
+            const dx = mouseX - game.astronaut.x;
+            const dy = mouseY - game.astronaut.y;
+            game.throwAngle = Math.atan2(dy, dx);
+            
+            // 更新指示器位置
+            throwIndicator.style.left = game.astronaut.x + 'px';
+            throwIndicator.style.top = game.astronaut.y + 'px';
+            
+            // 更新方向线
+            throwDirection.style.transform = `rotate(${game.throwAngle}rad)`;
+        }
+        
+        // 更新障碍物位置
+        function updateObstacles() {
+            game.obstacles.forEach(obstacle => {
+                if (obstacle.velocityX || obstacle.velocityY) {
+                    obstacle.x += obstacle.velocityX;
+                    obstacle.y += obstacle.velocityY;
+                    
+                    // 应用摩擦力
+                    obstacle.velocityX *= 0.98;
+                    obstacle.velocityY *= 0.98;
+                    
+                    // 如果速度很小，就停止
+                    if (Math.abs(obstacle.velocityX) < 0.1) obstacle.velocityX = 0;
+                    if (Math.abs(obstacle.velocityY) < 0.1) obstacle.velocityY = 0;
+                    
+                    // 边界检测
+                    if (obstacle.x < obstacle.width/2) {
+                        obstacle.x = obstacle.width/2;
+                        obstacle.velocityX = -obstacle.velocityX * 0.7;
+                    }
+                    if (obstacle.x > canvas.width - obstacle.width/2) {
+                        obstacle.x = canvas.width - obstacle.width/2;
+                        obstacle.velocityX = -obstacle.velocityX * 0.7;
+                    }
+                    if (obstacle.y < obstacle.height/2) {
+                        obstacle.y = obstacle.height/2;
+                        obstacle.velocityY = -obstacle.velocityY * 0.7;
+                    }
+                    if (obstacle.y > canvas.height - obstacle.height/2) {
+                        obstacle.y = canvas.height - obstacle.height/2;
+                        obstacle.velocityY = -obstacle.velocityY * 0.7;
+                    }
+                }
+            });
+        }
+        
+        // 更新游戏状态
+        function updateGame() {
+            if (!game.gameActive) return;
+            
+            // 检查是否到达初始抓手附近
+            if (game.initialFloating) {
+                const distance = Math.sqrt(
+                    Math.pow(game.targetHandle.x - game.astronaut.x, 2) +
+                    Math.pow(game.targetHandle.y - game.astronaut.y, 2)
+                );
+                
+                if (distance < 80) {
+                    // 到达附近，停止移动
+                    game.velocityX = 0;
+                    game.velocityY = 0;
+                }
+            } else if (game.pushDistance > 0) {
+                // 正在推动状态
+                game.pushDistance -= Math.sqrt(
+                    Math.pow(game.velocityX, 2) + Math.pow(game.velocityY, 2)
+                );
+                
+                // 如果推动距离用完，开始减速
+                if (game.pushDistance <= 0) {
+                    game.pushDistance = 0;
+                }
+            }
+            
+            // 应用速度
+            game.astronaut.x += game.velocityX;
+            game.astronaut.y += game.velocityY;
+            
+            // 如果不是初始漂浮状态，应用摩擦力
+            if (!game.initialFloating && game.pushDistance <= 0 && !game.isThrowing) {
+                game.velocityX *= game.friction;
+                game.velocityY *= game.friction;
+                
+                // 如果速度很小，就停止
+                if (Math.abs(game.velocityX) < 0.1) game.velocityX = 0;
+                if (Math.abs(game.velocityY) < 0.1) game.velocityY = 0;
+            }
+            
+            // 边界检测
+            // 碰到上边界
+            if (game.astronaut.y < 40 + game.astronaut.height/2) {
+                game.astronaut.y = 40 + game.astronaut.height/2;
+                game.velocityY = -game.velocityY * 0.7;
+            }
+            
+            // 碰到下边界
+            if (game.astronaut.y > canvas.height - 40 - game.astronaut.height/2) {
+                game.astronaut.y = canvas.height - 40 - game.astronaut.height/2;
+                game.velocityY = -game.velocityY * 0.7;
+            }
+            
+            // 碰到左边界
+            if (game.astronaut.x < game.astronaut.width/2) {
+                game.astronaut.x = game.astronaut.width/2;
+                game.velocityX = -game.velocityX * 0.7;
+            }
+            
+            // 碰到右边界
+            if (game.astronaut.x > canvas.width - game.astronaut.width/2) {
+                game.astronaut.x = canvas.width - game.astronaut.width/2;
+                game.velocityX = -game.velocityX * 0.7;
+            }
+            
+            // 检查与仪器的碰撞
+            checkInstrumentCollision();
+            
+            // 检测是否到达电脑设备(维修点)
+            const distanceToComputer = Math.sqrt(
+                Math.pow(game.astronaut.x - game.computer.x, 2) +
+                Math.pow(game.astronaut.y - game.computer.y, 2)
+            );
+            
+            if (distanceToComputer < 120) {
+                game.gameActive = false;
+                message.style.display = 'block';
+                warningSign.style.display = 'none';
+            }
+            
+            // 检查抓手接近
+            checkHandleProximity();
+            
+            // 检查障碍物接近
+            checkObstacleProximity();
+            
+            // 更新障碍物位置
+            updateObstacles();
+            
+            // 绘制游戏
+            drawGame();
+            
+            requestAnimationFrame(updateGame);
+        }
+        
+        // 控制按钮点击事件
+        document.querySelectorAll('.control-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (!game.activeHandle || !game.gameActive || game.initialFloating || game.isHolding) return;
+                
+                const direction = this.getAttribute('data-direction');
+                
+                switch(direction) {
+                    case 'up':
+                        game.velocityY = game.PUSH_SPEED;
+                        break;
+                    case 'down':
+                        game.velocityY = -game.PUSH_SPEED;
+                        break;
+                    case 'left':
+                        game.velocityX = game.PUSH_SPEED;
+                        break;
+                    case 'right':
+                        game.velocityX = -game.PUSH_SPEED;
+                        break;
+                }
+                
+                // 设置推动距离
+                game.pushDistance = game.MAX_PUSH_DISTANCE;
+                
+                // 添加一些随机性
+                game.velocityX += (Math.random() - 0.5) * 0.5;
+                game.velocityY += (Math.random() - 0.5) * 0.5;
+                
+                controls.style.display = 'none';
+                game.activeHandle.isGlowing = false;
+                game.activeHandle.isActive = false;
+                game.activeHandle = null;
+            });
+        });
+        
+        // 重新开始游戏
+        restartBtn.addEventListener('click', function() {
+            message.style.display = 'none';
+            initGame();
+        });
+        
+        // 开始游戏按钮
+        startBtn.addEventListener('click', function() {
+            introMessage.style.display = 'none';
+            initGame();
+        });
+        
+        // 鼠标移动事件 - 更新投掷方向和悬停状态
+        canvas.addEventListener('mousemove', function(e) {
+            if (!game.gameActive) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            if (game.isThrowing && game.heldObstacle) {
+                // 如果正在投掷，更新投掷方向
+                updateThrowIndicator(mouseX, mouseY);
+                return;
+            }
+            
+            // 检查鼠标是否悬停在可抓取的抓手上 (150)
+            let newHoveredHandle = null;
+            
+            game.grabHandles.forEach(handle => {
+                if (handle.canGrab || (game.initialFloating && handle === game.targetHandle)) {
+                    const distance = Math.sqrt(
+                        Math.pow(handle.x - mouseX, 2) +
+                        Math.pow(handle.y - mouseY, 2)
+                    );
+                    
+                    if (distance < 150) {
+                        newHoveredHandle = handle;
+                    }
+                }
+            });
+            
+            // 更新悬停状态
+            if (game.hoveredHandle !== newHoveredHandle) {
+                if (game.hoveredHandle) {
+                    game.hoveredHandle.isHovered = false;
+                }
+                game.hoveredHandle = newHoveredHandle;
+                if (game.hoveredHandle) {
+                    game.hoveredHandle.isHovered = true;
+                }
+            }
+        });
+        
+        // 鼠标离开画布时清除悬停状态
+        canvas.addEventListener('mouseleave', function() {
+            if (game.hoveredHandle) {
+                game.hoveredHandle.isHovered = false;
+                game.hoveredHandle = null;
+            }
+        });
+        
+        // 点击游戏区域
+        canvas.addEventListener('click', function(e) {
+            if (!game.gameActive) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            if (game.isThrowing && game.heldObstacle) {
+                // 如果正在投掷，执行投掷动作
+                throwObstacle();
+                return;
+            }
+            
+            // 检查是否点击了障碍物 (180)
+            let clickedObstacle = false;
+            game.obstacles.forEach(obstacle => {
+                if (obstacle.canClick) {
+                    const distance = Math.sqrt(
+                        Math.pow(obstacle.x - mouseX, 2) +
+                        Math.pow(obstacle.y - mouseY, 2)
+                    );
+                    
+                    if (distance < 180) {
+                        grabObstacle(obstacle);
+                        clickedObstacle = true;
+                    }
+                }
+            });
+            
+            // 检查是否点击了抓手 (150)
+            if (!clickedObstacle && !game.isHolding) {
+                // 如果正在初始漂浮状态，检查是否点击了目标抓手
+                if (game.initialFloating) {
+                    const distance = Math.sqrt(
+                        Math.pow(game.targetHandle.x - mouseX, 2) +
+                        Math.pow(game.targetHandle.y - mouseY, 2)
+                    );
+                    
+                    if (distance < 150) {
+                        triggerHandle(game.targetHandle);
+                    }
+                } else if (game.hoveredHandle) {
+                    // 如果不是初始状态，检查悬停的抓手
+                    triggerHandle(game.hoveredHandle);
+                }
+            }
+        });
+        
+        // 选择题选项点击事件
+        document.querySelectorAll('.option').forEach(option => {
+            option.addEventListener('click', function() {
+                // 移除同问题其他选项的选中状态
+                const question = this.parentElement;
+                question.querySelectorAll('.option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                
+                // 添加选中状态
+                this.classList.add('selected');
+                
+                // 检查是否所有问题都已回答
+                const allQuestions = document.querySelectorAll('.question');
+                let allAnswered = true;
+                let allCorrect = true;
+                
+                allQuestions.forEach(q => {
+                    const selectedOption = q.querySelector('.option.selected');
+                    if (!selectedOption) {
+                        allAnswered = false;
+                        allCorrect = false;
+                    } else if (selectedOption.getAttribute('data-correct') !== 'true') {
+                        allCorrect = false;
+                    }
+                });
+                
+                // 如果所有问题都回答了且都正确，启用开始按钮
+                if (allAnswered && allCorrect) {
+                    startBtn.disabled = false;
+                    errorMessage.style.display = 'none';
+                } else if (allAnswered) {
+                    // 如果都回答了但有错误，显示错误提示
+                    errorMessage.style.display = 'block';
+                }
+            });
+        });
+        
+        // 页面加载完成后显示介绍
+        window.addEventListener('load', function() {
+            // 初始隐藏所有游戏元素
+            canvas.style.display = 'none';
+            controls.style.display = 'none';
+            message.style.display = 'none';
+            throwIndicator.style.display = 'none';
+            heldItem.style.display = 'none';
+            errorMessage.style.display = 'none';
+            warningSign.style.display = 'none';
+            
+            // 初始禁用开始按钮
+            startBtn.disabled = true;
+            
+            // 显示游戏说明对话框
+            introMessage.style.display = 'block';
+            
+            // 初始绘制
+            drawGame();
+        });
+    </script>
+</body>
+</html>
