@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>跳一跳 HTML版 - 调整难度</title>
+    <title>跳一跳 HTML版</title>
     <style>
         body {
             margin: 0;
@@ -115,6 +115,19 @@
             font-size: 12px;
             color: #333;
         }
+        .spark {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background-color: #FF5722;
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+        }
+        @keyframes spark-animation {
+            0% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)); opacity: 0; }
+        }
     </style>
 </head>
 <body>
@@ -147,6 +160,7 @@
         const powerContainer = document.getElementById('power-container');
         const powerBar = document.getElementById('power-bar');
         const powerText = document.getElementById('power-text');
+        const gameContainer = document.getElementById('game-container');
 
         let score = 0;
         let isJumping = false;
@@ -155,44 +169,90 @@
         let pressTimer = null;
         let power = 0;
         let maxPower = 100;
-        let maxPowerTime = 1000; // 蓄满力需要的时间(毫秒)
+        let maxPowerTime = 1000;
+        let isOvercharged = false;
+        let sparkTimer = null;
+        let screenRightEdge = window.innerWidth;
+        let platformOffset = 0;
 
         // 初始化游戏
         function initGame() {
             score = 0;
             isJumping = false;
             isGameOver = false;
+            isOvercharged = false;
+            platformOffset = 0;
             scoreDisplay.textContent = `分数: ${score}`;
             gameOverScreen.style.display = 'none';
             powerContainer.style.display = 'none';
             
-            // 重置角色位置
             character.style.bottom = '150px';
             character.style.left = '50px';
             character.style.transform = 'scale(1, 1)';
             
-            // 重置平台位置
             currentPlatform.style.width = '80px';
             currentPlatform.style.left = '30px';
             
-            // 放置第一个下一个平台
             placeNextPlatform(parseInt(currentPlatform.style.left) + parseInt(currentPlatform.style.width));
         }
 
         // 随机放置下一个平台
         function placeNextPlatform(basePosition) {
-            const minDistance = 80;  // 减小最小距离
-            const maxDistance = 150; // 减小最大距离
-            
-            // 确保下一个平台不会太远
+            const minDistance = 80;
+            const maxDistance = 150;
             const distance = minDistance + Math.random() * (maxDistance - minDistance);
             
-            const minWidth = 50;  // 增加最小宽度
+            const minWidth = 50;
             const maxWidth = 100;
             const width = minWidth + Math.random() * (maxWidth - minWidth);
             
+            let newPosition = basePosition + distance;
+            
+            const characterLeft = parseInt(character.style.left);
+            if (newPosition + width > screenRightEdge - 50) {
+                const overflow = (newPosition + width) - (screenRightEdge - 50);
+                platformOffset -= overflow;
+                
+                currentPlatform.style.left = (parseInt(currentPlatform.style.left) + platformOffset) + 'px';
+                nextPlatform.style.left = (parseInt(nextPlatform.style.left) + platformOffset) + 'px';
+                character.style.left = (parseInt(character.style.left) + platformOffset) + 'px';
+                
+                newPosition += platformOffset;
+            }
+            
             nextPlatform.style.width = `${width}px`;
-            nextPlatform.style.left = `${basePosition + distance}px`;
+            nextPlatform.style.left = `${newPosition}px`;
+        }
+
+        // 创建火花效果
+        function createSpark() {
+            if (!isOvercharged) return;
+            
+            const spark = document.createElement('div');
+            spark.className = 'spark';
+            
+            const powerContainerRect = powerContainer.getBoundingClientRect();
+            const startX = powerContainerRect.right - 10;
+            const startY = powerContainerRect.top + powerContainerRect.height / 2;
+            
+            spark.style.left = `${startX}px`;
+            spark.style.top = `${startY}px`;
+            
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 10 + Math.random() * 20;
+            const tx = Math.cos(angle) * distance;
+            const ty = Math.sin(angle) * distance;
+            
+            spark.style.setProperty('--tx', `${tx}px`);
+            spark.style.setProperty('--ty', `${ty}px`);
+            
+            spark.style.animation = 'spark-animation 0.5s forwards';
+            
+            document.body.appendChild(spark);
+            
+            spark.addEventListener('animationend', () => {
+                spark.remove();
+            });
         }
 
         // 跳跃函数
@@ -205,24 +265,29 @@
             const nextPlatformLeft = parseInt(nextPlatform.style.left);
             const nextPlatformWidth = parseInt(nextPlatform.style.width);
             
-            // 调整跳跃距离计算，使满力时能轻松跳到下一个平台
-            const minJump = 80;  // 最小跳跃距离
-            const maxJump = nextPlatformLeft + nextPlatformWidth - characterLeft + 20; // 确保能跳到平台中央
+            if (isOvercharged) {
+                character.style.transition = 'left 1.5s ease-out, bottom 1.5s ease-out';
+                character.style.left = `${characterLeft + 500}px`;
+                character.style.bottom = `${parseInt(character.style.bottom) + 300}px`;
+                
+                setTimeout(() => {
+                    gameOver();
+                }, 1000);
+                return;
+            }
             
-            // 计算跳跃距离 (power 0-100 映射到 minJump-maxJump)
+            const minJump = 80;
+            const maxJump = nextPlatformLeft + nextPlatformWidth - characterLeft + 20;
             const jumpDistance = minJump + (power / 100) * (maxJump - minJump);
             const targetLeft = characterLeft + jumpDistance;
             
-            // 跳跃动画
             character.style.transition = 'left 0.8s cubic-bezier(0.25, 0.1, 0.25, 1), bottom 0.4s cubic-bezier(0.5, 0, 0.5, 1)';
             character.style.left = `${targetLeft}px`;
             character.style.bottom = '250px';
             
-            // 下落动画
             setTimeout(() => {
                 character.style.bottom = '150px';
                 
-                // 检查是否落在平台上
                 setTimeout(() => {
                     character.style.transition = 'transform 0.2s';
                     character.style.transform = 'scale(1.1, 0.9)';
@@ -234,20 +299,16 @@
                                              targetLeft <= nextPlatformLeft + nextPlatformWidth;
                         
                         if (isOnPlatform) {
-                            // 成功跳到下一个平台
                             score += Math.floor(jumpDistance / 10);
                             scoreDisplay.textContent = `分数: ${score}`;
                             
-                            // 移动当前平台到下一个平台的位置
                             currentPlatform.style.left = nextPlatform.style.left;
                             currentPlatform.style.width = nextPlatform.style.width;
                             
-                            // 放置新的下一个平台（基于当前平台位置）
                             placeNextPlatform(parseInt(currentPlatform.style.left) + parseInt(currentPlatform.style.width));
                             
                             isJumping = false;
                         } else {
-                            // 跳跃失败
                             gameOver();
                         }
                     }, 200);
@@ -269,20 +330,28 @@
             e.preventDefault();
             pressStartTime = Date.now();
             power = 0;
+            isOvercharged = false;
             powerContainer.style.display = 'block';
             powerBar.style.width = '0%';
             powerText.textContent = '0%';
+            powerBar.style.background = 'linear-gradient(to right, #4CAF50, #FFC107, #F44336)';
             
             pressTimer = setInterval(() => {
                 const elapsed = Date.now() - pressStartTime;
                 power = Math.min((elapsed / maxPowerTime) * 100, maxPower);
                 
-                // 更新蓄力条
                 powerBar.style.width = `${power}%`;
                 powerText.textContent = `${Math.floor(power)}%`;
                 
-                // 角色蓄力动画
                 character.style.transform = `scale(${1 + power/200}, ${1 - power/200})`;
+                
+                if (elapsed > maxPowerTime * 1.2 && !isOvercharged) {
+                    isOvercharged = true;
+                    powerText.textContent = "危险!";
+                    powerBar.style.background = "#F44336";
+                    
+                    sparkTimer = setInterval(createSpark, 100);
+                }
             }, 16);
         }
 
@@ -292,10 +361,17 @@
             
             e.preventDefault();
             clearInterval(pressTimer);
+            if (sparkTimer) clearInterval(sparkTimer);
             pressTimer = null;
+            sparkTimer = null;
             
             character.style.transform = 'scale(1, 1)';
             jump(power);
+        }
+
+        // 窗口大小改变时更新屏幕右边缘
+        function handleResize() {
+            screenRightEdge = window.innerWidth;
         }
 
         // 事件监听
@@ -303,6 +379,7 @@
         document.addEventListener('mouseup', handlePressEnd);
         document.addEventListener('touchstart', handlePressStart, {passive: false});
         document.addEventListener('touchend', handlePressEnd, {passive: false});
+        window.addEventListener('resize', handleResize);
         
         restartBtn.addEventListener('click', initGame);
 
