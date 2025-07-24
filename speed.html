@@ -1,17 +1,16 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-cn">
 <head>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;700&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>嫦娥六號發射模擬器 | Chang'e-6 Launch Simulator</title>
+    <title>嫦娥六号发射模拟器 | Chang'e-6 Launch Simulator</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Noto Sans TC', 'Roboto', sans-serif;
+            font-family: 'Noto Sans SC', 'Roboto', sans-serif;
         }
         
         body {
@@ -354,7 +353,7 @@
             text-align: center;
             box-shadow: 0 4px 6px rgba(0, 100, 255, 0.8);
             transition: transform 0.2s, box-shadow 0.2s;
-            font-family: 'Noto Sans TC', 'Roboto', sans-serif;
+            font-family: 'Noto Sans SC', 'Roboto', sans-serif;
         }
         
         .ignition-button:hover {
@@ -385,7 +384,7 @@
             padding: 5px 10px;
             border-radius: 5px;
             transition: all 0.3s ease;
-            font-family: 'Noto Sans TC', 'Roboto', sans-serif;
+            font-family: 'Noto Sans SC', 'Roboto', sans-serif;
         }
         
         .progress-step.active {
@@ -412,7 +411,7 @@
             text-align: center;
             border: 2px solid #1a73e8;
             box-shadow: 0 4px 6px rgba(0, 100, 255, 0.8);
-            font-family: 'Noto Sans TC', 'Roboto', sans-serif;
+            font-family: 'Noto Sans SC', 'Roboto', sans-serif;
         }
         
         #altitude-value {
@@ -490,13 +489,13 @@
         .mission-complete h2, .mission-failed h2 {
             font-size: 36px;
             margin-bottom: 20px;
-            font-family: 'Noto Sans TC', 'Roboto', sans-serif;
+            font-family: 'Noto Sans SC', 'Roboto', sans-serif;
         }
         
         .mission-complete p, .mission-failed p {
             font-size: 18px;
             margin-bottom: 20px;
-            font-family: 'Noto Sans TC', 'Roboto', sans-serif;
+            font-family: 'Noto Sans SC', 'Roboto', sans-serif;
         }
         
         .restart-button {
@@ -515,7 +514,7 @@
             text-align: center;
             box-shadow: 0 4px 6px rgba(0, 100, 255, 0.8);
             transition: transform 0.2s, box-shadow 0.2s;
-            font-family: 'Noto Sans TC', 'Roboto', sans-serif;
+            font-family: 'Noto Sans SC', 'Roboto', sans-serif;
             margin: 0 auto;
         }
         
@@ -849,45 +848,43 @@
         
         <!-- 新增的第一宇宙速度对话框 -->
         <div class="cosmic-velocity-dialog">
-            <h2 data-zh-tw="已達第一宇宙速度" data-zh-cn="已达第一宇宙速度" data-en="First Cosmic Velocity Reached">已達第一宇宙速度</h2>
-            <p data-zh-tw="速度已達7.9 km/s！現在可以環繞地球飛行" 
-               data-zh-cn="速度已达7.9 km/s！现在可以环绕地球飞行"
+            <h2 data-zh-cn="已达第一宇宙速度" data-en="First Cosmic Velocity Reached">已达第一宇宙速度</h2>
+            <p data-zh-cn="速度已达7.9 km/s！现在可以环绕地球飞行"
                data-en="Velocity reached 7.9 km/s! Now can orbit the Earth">
-                速度已達7.9 km/s！現在可以環繞地球飛行
+                速度已达7.9 km/s！现在可以环绕地球飞行
             </p>
             <iframe src="rotate.html"></iframe>
-            <button class="continue-button" data-zh-tw="繼續任務" data-zh-cn="继续任务" data-en="Continue Mission">繼續任務</button>
+            <button class="continue-button" data-zh-cn="继续任务" data-en="Continue Mission">继续任务</button>
         </div>
         
 <!-- 新增的二级火箭第二次关机对话框 -->
 <div class="second-shutdown-dialog">
-    <h2 data-zh-tw="進入地月轉移軌道" data-zh-cn="进入地月转移轨道" data-en="Entering Earth-Moon Transfer Orbit">進入地月轉移軌道</h2>
-    <p data-zh-tw="速度已達約10.9 km/s！進入地月轉移軌道" 
-       data-zh-cn="速度已达约10.9 km/s！进入地月转移轨道"
+    <h2 data-zh-cn="进入地月转移轨道" data-en="Entering Earth-Moon Transfer Orbit">进入地月转移轨道</h2>
+    <p data-zh-cn="速度已达约10.9 km/s！进入地月转移轨道"
        data-en="Velocity reached about 10.9 km/s! Entering Earth-Moon transfer orbit">
-        速度已達約10.9 km/s！進入地月轉移軌道
+        速度已达约10.9 km/s！进入地月转移轨道
     </p>
     <iframe src="orbit.html"></iframe>
-    <button class="continue-button" data-zh-tw="繼續任務" data-zh-cn="继续任务" data-en="Continue Mission">繼續任務</button>
+    <button class="continue-button" data-zh-cn="继续任务" data-en="Continue Mission">继续任务</button>
 </div>
 
         <div class="progress-container">
-            <div class="progress-step step-1 active" data-zh-tw="點火升空" data-zh-cn="点火升空" data-en="Ignition and Liftoff">點火升空</div>
-            <div class="progress-step step-2" data-zh-tw="助推器分離" data-zh-cn="助推器分离" data-en="Booster Separation">助推器分離</div>
-            <div class="progress-step step-3" data-zh-tw="整流罩分離" data-zh-cn="整流罩分离" data-en="Fairing Separation">整流罩分離</div>
-            <div class="progress-step step-4" data-zh-tw="一級火箭分離" data-zh-cn="一级火箭分离" data-en="First Stage Separation">一級火箭分離</div>
-            <div class="progress-step step-5" data-zh-tw="二級火箭點火" data-zh-cn="二级火箭点火" data-en="Second Stage Ignition">二級火箭點火</div>
-            <div class="progress-step step-6" data-zh-tw="星箭分離" data-zh-cn="星箭分离" data-en="Spacecraft Separation">星箭分離</div>
+            <div class="progress-step step-1 active" data-zh-cn="点火升空" data-en="Ignition and Liftoff">点火升空</div>
+            <div class="progress-step step-2" data-zh-cn="助推器分离" data-en="Booster Separation">助推器分离</div>
+            <div class="progress-step step-3" data-zh-cn="整流罩分离" data-en="Fairing Separation">整流罩分离</div>
+            <div class="progress-step step-4" data-zh-cn="一级火箭分离" data-en="First Stage Separation">一级火箭分离</div>
+            <div class="progress-step step-5" data-zh-cn="二级火箭点火" data-en="Second Stage Ignition">二级火箭点火</div>
+            <div class="progress-step step-6" data-zh-cn="星箭分离" data-en="Spacecraft Separation">星箭分离</div>
         </div>
         
         <div class="altitude-container">
-            <div id="altitude-label" data-zh-tw="時間" data-zh-cn="时间" data-en="Time">時間: </div>
+            <div id="altitude-label" data-zh-cn="时间" data-en="Time">时间: </div>
             <div id="altitude-value">0 s</div>
         </div>
         
         <div class="prompt-container">
-            <div class="prompt-text" data-zh-tw="準備發射嫦娥六號任務" data-zh-cn="准备发射嫦娥六号任务" data-en="Prepare to launch Chang'e-6 mission">準備發射嫦娥六號任務</div>
-            <button class="ignition-button" data-zh-tw="點火" data-zh-cn="点火" data-en="Ignite">點火</button>
+            <div class="prompt-text" data-zh-cn="准备发射嫦娥六号任务" data-en="Prepare to launch Chang'e-6 mission">准备发射嫦娥六号任务</div>
+            <button class="ignition-button" data-zh-cn="点火" data-en="Ignite">点火</button>
         </div>
         
         <div class="countdown">5</div>
@@ -956,13 +953,12 @@
         </div>
         
         <div class="mission-complete">
-            <h2 data-zh-tw="任務完成！" data-zh-cn="任务完成！" data-en="Mission Complete!">任務完成！</h2>
-            <p data-zh-tw="嫦娥六號成功進入軌道" 
-               data-zh-cn="嫦娥六号成功进入轨道"
+            <h2 data-zh-cn="任务完成！" data-en="Mission Complete!">任务完成！</h2>
+            <p data-zh-cn="嫦娥六号成功进入轨道"
                data-en="Chang'e-6 has successfully entered orbit">
-                嫦娥六號成功進入軌道
+                嫦娥六号成功进入轨道
             </p>
-            <button class="restart-button" data-zh-tw="重新開始" data-zh-cn="重新开始" data-en="Restart">重新開始</button>
+            <button class="restart-button" data-zh-cn="重新开始" data-en="Restart">重新开始</button>
         </div>
     </div>
 
@@ -1045,122 +1041,122 @@ secondShutdownShown: false,
         const texts = {
             'step-1': {
                 'en': 'Ignition and Liftoff',
-                'zh': '點火升空',
+                'zh': '点火升空',
                 'zh_cn': '点火升空'
             },
             'step-2': {
                 'en': 'Booster Separation',
-                'zh': '助推器分離',
+                'zh': '助推器分离',
                 'zh_cn': '助推器分离'
             },
             'step-3': {
                 'en': 'Fairing Separation',
-                'zh': '整流罩分離',
+                'zh': '整流罩分离',
                 'zh_cn': '整流罩分离'
             },
             'step-4': {
                 'en': 'First Stage Separation',
-                'zh': '一級火箭分離',
+                'zh': '一级火箭分离',
                 'zh_cn': '一级火箭分离'
             },
             'step-5': {
                 'en': 'Second Stage Ignition',
-                'zh': '二級火箭點火',
+                'zh': '二级火箭点火',
                 'zh_cn': '二级火箭点火'
             },
             'step-6': {
                 'en': 'Spacecraft Separation',
-                'zh': '星箭分離',
+                'zh': '星箭分离',
                 'zh_cn': '星箭分离'
             },
             'prompt-1': {
                 'en': 'Prepare to launch Chang\'e-6 mission',
-                'zh': '準備發射嫦娥六號任務',
+                'zh': '准备发射嫦娥六号任务',
                 'zh_cn': '准备发射嫦娥六号任务'
             },
             'prompt-2': {
                 'en': 'Rocket is ascending, click on boosters to separate them',
-                'zh': '火箭已上升，請點擊助推器進行分離',
+                'zh': '火箭已上升，请点击助推器进行分离',
                 'zh_cn': '火箭已上升，请点击助推器进行分离'
             },
             'prompt-3': {
                 'en': 'Click on the fairing to separate it',
-                'zh': '請點擊整流罩進行分離',
+                'zh': '请点击整流罩进行分离',
                 'zh_cn': '请点击整流罩进行分离'
             },
             'prompt-4': {
                 'en': 'Click on the first stage rocket to separate it',
-                'zh': '請點擊一級火箭進行分離',
+                'zh': '请点击一级火箭进行分离',
                 'zh_cn': '请点击一级火箭进行分离'
             },
             'prompt-5': {
                 'en': 'Second stage engine ignition',
-                'zh': '二級火箭開始點火',
+                'zh': '二级火箭开始点火',
                 'zh_cn': '二级火箭开始点火'
             },
             'prompt-6': {
                 'en': 'Click on Chang\'e-6 for spacecraft separation',
-                'zh': '請點擊嫦娥六號進行星箭分離',
+                'zh': '请点击嫦娥六号进行星箭分离',
                 'zh_cn': '请点击嫦娥六号进行星箭分离'
             },
             'ignition': {
                 'en': 'Ignite',
-                'zh': '點火',
+                'zh': '点火',
                 'zh_cn': '点火'
             },
             'altitude': {
                 'en': 'Time',
-                'zh': '時間',
+                'zh': '时间',
                 'zh_cn': '时间'
             },
             'mission-complete-title': {
                 'en': 'Mission Complete!',
-                'zh': '任務完成！',
+                'zh': '任务完成！',
                 'zh_cn': '任务完成！'
             },
             'mission-complete-text': {
                 'en': 'Chang\'e-6 has successfully entered orbit',
-                'zh': '嫦娥六號成功進入軌道',
+                'zh': '嫦娥六号成功进入轨道',
                 'zh_cn': '嫦娥六号成功进入轨道'
             },
             'restart': {
                 'en': 'Restart',
-                'zh': '重新開始',
+                'zh': '重新开始',
                 'zh_cn': '重新开始'
             },
             'mission-failed-title': {
                 'en': 'Mission Failed!',
-                'zh': '任務失敗！',
+                'zh': '任务失败！',
                 'zh_cn': '任务失败！'
             },
             'mission-failed-text': {
                 'en': 'Failed to complete separation at the correct altitude',
-                'zh': '未能在正確的高度完成分離操作',
+                'zh': '未能在正确的高度完成分离操作',
                 'zh_cn': '未能在正确的高度完成分离操作'
             },
             'cosmic-velocity-title': {
                 'en': 'First Cosmic Velocity Reached',
-                'zh': '已達第一宇宙速度',
+                'zh': '已达第一宇宙速度',
                 'zh_cn': '已达第一宇宙速度'
             },
             'cosmic-velocity-text': {
                 'en': 'Velocity reached 7.9 km/s! Now can orbit the Earth',
-                'zh': '速度已達7.9 km/s！現在可以環繞地球飛行',
+                'zh': '速度已达7.9 km/s！现在可以环绕地球飞行',
                 'zh_cn': '速度已达7.9 km/s！现在可以环绕地球飞行'
             },
             'continue-mission': {
                 'en': 'Continue Mission',
-                'zh': '繼續任務',
+                'zh': '继续任务',
                 'zh_cn': '继续任务'
             },
 'second-shutdown-title': {
     'en': 'Entering Earth-Moon Transfer Orbit',
-    'zh': '進入地月轉移軌道',
+    'zh': '进入地月转移轨道',
     'zh_cn': '进入地月转移轨道'
 },
 'second-shutdown-text': {
     'en': 'Velocity reached about 10.9 km/s! Entering Earth-Moon transfer orbit',
-    'zh': '速度已達約10.9 km/s！進入地月轉移軌道',
+    'zh': '速度已达约10.9 km/s！进入地月转移轨道',
     'zh_cn': '速度已达约10.9 km/s！进入地月转移轨道'
 }
         };
@@ -1379,7 +1375,7 @@ function pauseTimerAt(targetTime) {
 }        
         // 显示第一宇宙速度对话框
         function showCosmicVelocityDialog() {
-            const lang = gameState.language === 'zh-tw' || gameState.language === 'zh' ? 'zh' : 'en';
+            const lang = gameState.language === 'zh-cn' || gameState.language === 'zh' ? 'zh' : 'en';
             
             // 更新对话框内容
             cosmicVelocityDialog.querySelector('h2').textContent = 
@@ -1539,7 +1535,7 @@ if (secondShutdownDialog) {
         }
         // 显示二级火箭第二次关机对话框
 function showSecondShutdownDialog() {
-    const lang = gameState.language === 'zh-tw' || gameState.language === 'zh' ? 'zh' : 'en';
+    const lang = gameState.language === 'zh-cn' || gameState.language === 'zh' ? 'zh' : 'en';
     
     // 更新对话框内容
     secondShutdownDialog.querySelector('h2').textContent = 
@@ -1573,7 +1569,7 @@ function continueMissionFromSecondShutdown() {
             } else if (event.data && event.data.type === 'requestLanguage') {
                 event.source.postMessage({ 
                     type: 'setLanguage', 
-                    lang: gameState.language === 'zh-tw' ? 'zh' : gameState.language 
+                    lang: gameState.language === 'zh-cn' ? 'zh' : gameState.language 
                 }, '*');
             }
         });
@@ -1837,7 +1833,7 @@ function continueMissionFromSecondShutdown() {
             const missionComplete = document.querySelector('.mission-complete');
             if (missionComplete) {
                 // 确保对话框内容使用当前语言
-                const lang = gameState.language === 'zh-tw' || gameState.language === 'zh' ? 'zh' : 'en';
+                const lang = gameState.language === 'zh-cn' || gameState.language === 'zh' ? 'zh' : 'en';
                 missionComplete.querySelector('h2').textContent = texts['mission-complete-title'][lang] || texts['mission-complete-title']['en'];
                 missionComplete.querySelector('p').textContent = texts['mission-complete-text'][lang] || texts['mission-complete-text']['en'];
                 missionComplete.querySelector('.restart-button').textContent = texts['restart'][lang] || texts['restart']['en'];
