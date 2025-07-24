@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-cn">
 <head>
@@ -968,7 +967,7 @@
         let gameState = {
             currentStep: 1,
             altitude: 0,
-            language: document.documentElement.lang || 'cn',
+            language: document.documentElement.lang || 'zh-cn',
             rocketLaunched: false,
 // Add this to your gameState object
 secondShutdownShown: false,
@@ -1574,7 +1573,15 @@ function continueMissionFromSecondShutdown() {
                 }, '*');
             }
         });
-
+        // 页面加载时请求父页面发送当前语言，收到后再渲染UI
+        window.addEventListener('DOMContentLoaded', () => {
+            window.parent.postMessage({ type: 'requestLanguage' }, '*');
+            setTimeout(() => {
+                if (!languageInitialized) {
+                    applyInitialLanguage();
+                }
+            }, 1000);
+        });
         
         // 点火和发射
         function startCountdown() {
