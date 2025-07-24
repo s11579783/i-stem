@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>跳一跳 HTML版 - 调整难度</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            touch-action: manipulation;
+        }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            perspective: 1000px;
+        }
+        #character {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #5cb8ff;
+            border-radius: 50%;
+            bottom: 150px;
+            left: 50px;
+            transform: translateZ(0);
+            transition: transform 0.3s;
+            z-index: 10;
+        }
+        .platform {
+            position: absolute;
+            height: 20px;
+            background-color: #8B4513;
+            border-radius: 5px;
+            bottom: 130px;
+            transform: translateZ(0);
+        }
+        #current-platform {
+            width: 80px;
+            left: 30px;
+            background-color: #8B4513;
+        }
+        #next-platform {
+            width: 60px;
+            left: 180px;
+            background-color: #A0522D;
+        }
+        #score-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            color: #333;
+        }
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+        }
+        #restart-btn {
+            background-color: #5cb8ff;
+            border: none;
+            padding: 10px 20px;
+            margin-top: 10px;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #press-indicator {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 16px;
+            color: #666;
+            text-align: center;
+        }
+        #power-container {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 20px;
+            background-color: #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+        }
+        #power-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #4CAF50, #FFC107, #F44336);
+            transition: width 0.1s;
+        }
+        #power-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            line-height: 20px;
+            font-size: 12px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="character"></div>
+        <div id="current-platform" class="platform"></div>
+        <div id="next-platform" class="platform"></div>
+        <div id="score-display">分数: 0</div>
+        <div id="press-indicator">长按屏幕蓄力，松开跳跃</div>
+        <div id="power-container">
+            <div id="power-bar"></div>
+            <div id="power-text">0%</div>
+        </div>
+        <div id="game-over">
+            <h2>游戏结束</h2>
+            <p>你的分数: <span id="final-score">0</span></p>
+            <button id="restart-btn">重新开始</button>
+        </div>
+    </div>
+
+    <script>
+        const character = document.getElementById('character');
+        const currentPlatform = document.getElementById('current-platform');
+        const nextPlatform = document.getElementById('next-platform');
+        const scoreDisplay = document.getElementById('score-display');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalScore = document.getElementById('final-score');
+        const restartBtn = document.getElementById('restart-btn');
+        const pressIndicator = document.getElementById('press-indicator');
+        const powerContainer = document.getElementById('power-container');
+        const powerBar = document.getElementById('power-bar');
+        const powerText = document.getElementById('power-text');
+
+        let score = 0;
+        let isJumping = false;
+        let isGameOver = false;
+        let pressStartTime = 0;
+        let pressTimer = null;
+        let power = 0;
+        let maxPower = 100;
+        let maxPowerTime = 1000; // 蓄满力需要的时间(毫秒)
+
+        // 初始化游戏
+        function initGame() {
+            score = 0;
+            isJumping = false;
+            isGameOver = false;
+            scoreDisplay.textContent = `分数: ${score}`;
+            gameOverScreen.style.display = 'none';
+            powerContainer.style.display = 'none';
+            
+            // 重置角色位置
+            character.style.bottom = '150px';
+            character.style.left = '50px';
+            character.style.transform = 'scale(1, 1)';
+            
+            // 重置平台位置
+            currentPlatform.style.width = '80px';
+            currentPlatform.style.left = '30px';
+            
+            // 放置第一个下一个平台
+            placeNextPlatform(parseInt(currentPlatform.style.left) + parseInt(currentPlatform.style.width));
+        }
+
+        // 随机放置下一个平台
+        function placeNextPlatform(basePosition) {
+            const minDistance = 80;  // 减小最小距离
+            const maxDistance = 150; // 减小最大距离
+            
+            // 确保下一个平台不会太远
+            const distance = minDistance + Math.random() * (maxDistance - minDistance);
+            
+            const minWidth = 50;  // 增加最小宽度
+            const maxWidth = 100;
+            const width = minWidth + Math.random() * (maxWidth - minWidth);
+            
+            nextPlatform.style.width = `${width}px`;
+            nextPlatform.style.left = `${basePosition + distance}px`;
+        }
+
+        // 跳跃函数
+        function jump(power) {
+            if (isJumping || isGameOver) return;
+            
+            isJumping = true;
+            powerContainer.style.display = 'none';
+            const characterLeft = parseInt(character.style.left);
+            const nextPlatformLeft = parseInt(nextPlatform.style.left);
+            const nextPlatformWidth = parseInt(nextPlatform.style.width);
+            
+            // 调整跳跃距离计算，使满力时能轻松跳到下一个平台
+            const minJump = 80;  // 最小跳跃距离
+            const maxJump = nextPlatformLeft + nextPlatformWidth - characterLeft + 20; // 确保能跳到平台中央
+            
+            // 计算跳跃距离 (power 0-100 映射到 minJump-maxJump)
+            const jumpDistance = minJump + (power / 100) * (maxJump - minJump);
+            const targetLeft = characterLeft + jumpDistance;
+            
+            // 跳跃动画
+            character.style.transition = 'left 0.8s cubic-bezier(0.25, 0.1, 0.25, 1), bottom 0.4s cubic-bezier(0.5, 0, 0.5, 1)';
+            character.style.left = `${targetLeft}px`;
+            character.style.bottom = '250px';
+            
+            // 下落动画
+            setTimeout(() => {
+                character.style.bottom = '150px';
+                
+                // 检查是否落在平台上
+                setTimeout(() => {
+                    character.style.transition = 'transform 0.2s';
+                    character.style.transform = 'scale(1.1, 0.9)';
+                    
+                    setTimeout(() => {
+                        character.style.transform = 'scale(1, 1)';
+                        
+                        const isOnPlatform = targetLeft >= nextPlatformLeft && 
+                                             targetLeft <= nextPlatformLeft + nextPlatformWidth;
+                        
+                        if (isOnPlatform) {
+                            // 成功跳到下一个平台
+                            score += Math.floor(jumpDistance / 10);
+                            scoreDisplay.textContent = `分数: ${score}`;
+                            
+                            // 移动当前平台到下一个平台的位置
+                            currentPlatform.style.left = nextPlatform.style.left;
+                            currentPlatform.style.width = nextPlatform.style.width;
+                            
+                            // 放置新的下一个平台（基于当前平台位置）
+                            placeNextPlatform(parseInt(currentPlatform.style.left) + parseInt(currentPlatform.style.width));
+                            
+                            isJumping = false;
+                        } else {
+                            // 跳跃失败
+                            gameOver();
+                        }
+                    }, 200);
+                }, 400);
+            }, 400);
+        }
+
+        // 游戏结束
+        function gameOver() {
+            isGameOver = true;
+            finalScore.textContent = score;
+            gameOverScreen.style.display = 'block';
+        }
+
+        // 处理触摸/鼠标按下事件
+        function handlePressStart(e) {
+            if (isJumping || isGameOver) return;
+            
+            e.preventDefault();
+            pressStartTime = Date.now();
+            power = 0;
+            powerContainer.style.display = 'block';
+            powerBar.style.width = '0%';
+            powerText.textContent = '0%';
+            
+            pressTimer = setInterval(() => {
+                const elapsed = Date.now() - pressStartTime;
+                power = Math.min((elapsed / maxPowerTime) * 100, maxPower);
+                
+                // 更新蓄力条
+                powerBar.style.width = `${power}%`;
+                powerText.textContent = `${Math.floor(power)}%`;
+                
+                // 角色蓄力动画
+                character.style.transform = `scale(${1 + power/200}, ${1 - power/200})`;
+            }, 16);
+        }
+
+        // 处理触摸/鼠标释放事件
+        function handlePressEnd(e) {
+            if (isJumping || isGameOver || !pressTimer) return;
+            
+            e.preventDefault();
+            clearInterval(pressTimer);
+            pressTimer = null;
+            
+            character.style.transform = 'scale(1, 1)';
+            jump(power);
+        }
+
+        // 事件监听
+        document.addEventListener('mousedown', handlePressStart);
+        document.addEventListener('mouseup', handlePressEnd);
+        document.addEventListener('touchstart', handlePressStart, {passive: false});
+        document.addEventListener('touchend', handlePressEnd, {passive: false});
+        
+        restartBtn.addEventListener('click', initGame);
+
+        // 开始游戏
+        initGame();
+    </script>
+</body>
+</html>
